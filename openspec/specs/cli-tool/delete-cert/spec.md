@@ -22,3 +22,7 @@ The `oceanctl delete cert` command shall remove the certificate Secret from a ba
 #### Scenario: Reject delete-cert without backend name
 - **WHEN** the user runs `oceanctl delete cert` without -b flag
 - **THEN** the CLI validator rejects the request (ValidateBackend)
+
+#### Scenario: Delete cert with rollback on failure
+- **WHEN** the SBC update fails after the Secret is deleted
+- **THEN** the CLI restores the SBC's UseCert=true and CertSecret, and recreates the Secret (if original cert data is available)

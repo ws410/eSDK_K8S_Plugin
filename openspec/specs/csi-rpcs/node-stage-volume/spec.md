@@ -42,3 +42,23 @@ The NodeStageVolume RPC shall prepare a volume for use on the node by staging it
 #### Scenario: Reject NodeStageVolume with invalid volume capability
 - **WHEN** the CO sends a NodeStageVolumeRequest with VolumeCapability that is neither Block nor Mount type
 - **THEN** the driver returns codes.Internal error indicating invalid volume capability
+
+#### Scenario: Auto-attach when publishInfo is missing (backend offline)
+- **WHEN** the CO sends a NodeStageVolumeRequest without publishInfo in PublishContext and the StorageBackendContent status is nil or Online=false
+- **THEN** the attachVolume function returns error "attach volume failed cause backend offline, backend name: <name>" and the driver returns codes.Internal
+
+#### Scenario: Auto-attach when publishInfo is missing (build backend failed)
+- **WHEN** the CO sends a NodeStageVolumeRequest without publishInfo and backend.BuildBackend fails (invalid config, missing credentials, plugin init failure)
+- **THEN** the attachVolume function returns error "attach volume failed while building backend, backend name: <name>, err: <error>" and the driver returns codes.Internal
+
+#### Scenario: Auto-attach when publishInfo is missing (hostname retrieval failed)
+- **WHEN** the CO sends a NodeStageVolumeRequest without publishInfo and utils.GetHostName fails
+- **THEN** the attachVolume function returns error "attach volume failed while getting hostname, err: <error>" and the driver returns codes.Internal
+
+#### Scenario: Auto-attach when publishInfo is missing (attach to array failed)
+- **WHEN** the CO sends a NodeStageVolumeRequest without publishInfo and buildBackend.Plugin.AttachVolume fails
+- **THEN** the attachVolume function returns error "attach volume failed while attaching volume, volume name: <name>, err: <error>" and the driver returns codes.Internal
+
+#### Scenario: Clear residual path with LUN ID for UltraPath only
+- **WHEN** the SanManager StageVolume runs clearResidualPathWithLunId task
+- **THEN** the function checks if VolumeUseMultiPath=true AND MultiPathType=HWUltraPath AND protocol is "iscsi" or "fc"; if all conditions met, it calls connector.CleanDeviceByLunId to clean stale devices by LUN ID before connecting

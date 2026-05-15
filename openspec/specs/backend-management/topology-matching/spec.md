@@ -26,3 +26,15 @@ The topology matching system shall match CreateVolume requests with accessibilit
 #### Scenario: Handle empty requisite topologies
 - **WHEN** a CreateVolume request has AccessibilityRequirements but empty Requisite list
 - **THEN** the topology filter passes all pools (no requisite constraint)
+
+#### Scenario: Shuffle leftover pools after preferred topology matching
+- **WHEN** sortPoolsByPreferredTopologies has processed all preferred topologies
+- **THEN** the remaining pools that didn't match any preference are shuffled randomly and appended to the ordered list to prevent hotspots
+
+#### Scenario: Protocol topology combination with existing topologies
+- **WHEN** addProtocolTopology is called on a backend that already has SupportedTopologies configured
+- **THEN** the function creates protocol topology combinations by copying each existing topology and adding the protocol key (e.g., topology.kubernetes.io/protocol.iscsi = csi.huawei.com), then appends these combinations plus a standalone protocol topology entry
+
+#### Scenario: Protocol topology standalone entry
+- **WHEN** addProtocolTopology is called on a backend
+- **THEN** regardless of existing topologies, a standalone protocol topology entry is always added (map with only the protocol key and driver name as value)

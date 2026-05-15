@@ -22,3 +22,15 @@ The pool weighting system shall select the optimal storage pool from filtered ca
 #### Scenario: Decrement free capacity for thick allocation
 - **WHEN** a thick volume is created
 - **THEN** the updateSelectPool function decrements the selected pool's FreeCapacity by the requestSize to prevent over-allocation
+
+#### Scenario: Filter DTree pools by parent name availability
+- **WHEN** volumeType=dtree and no parentname is specified in StorageClass
+- **THEN** the selectDtreePool function filters candidate pools to only those with non-empty GetDTreeParentName(); returns error if no such pools exist
+
+#### Scenario: Skip DTree pool filtering when parentname is specified
+- **WHEN** volumeType=dtree and parentname is explicitly set in StorageClass parameters
+- **THEN** the selectDtreePool function returns all candidate pools without filtering (parent name validation is handled elsewhere)
+
+#### Scenario: Build pool pairs for local and remote selection
+- **WHEN** hyperMetro or replication is enabled
+- **THEN** the SelectPoolPair function iterates through each local pool, selects a corresponding remote pool via SelectRemotePool, builds SelectPoolPair structs (Local + Remote), and passes them to WeightPools for final selection

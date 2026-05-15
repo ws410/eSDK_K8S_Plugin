@@ -46,3 +46,19 @@ The ControllerExpandVolume RPC shall expand a volume's capacity on Huawei storag
 #### Scenario: Expand volume with missing VolumeCapability
 - **WHEN** the CO sends a ControllerExpandVolumeRequest for a non-NAS storage type without VolumeCapability in the request
 - **THEN** the driver returns codes.InvalidArgument error indicating VolumeCapability is empty
+
+#### Scenario: Skip sector size verification when volume attrs retrieval fails
+- **WHEN** the CO sends a ControllerExpandVolumeRequest and GetVolumeAttrsByVolumeId fails to retrieve volume attributes
+- **THEN** the verifySectorSize function logs a warning and skips the capacity verification (returns nil), allowing the expansion to proceed
+
+#### Scenario: Skip sector size verification when volume attrs are empty
+- **WHEN** the CO sends a ControllerExpandVolumeRequest and the volume attributes list is empty
+- **THEN** the verifySectorSize function skips verification (returns nil) as there are no attributes to check
+
+#### Scenario: Skip sector size verification when disableVerifyCapacity conflicts across PVs
+- **WHEN** the CO sends a ControllerExpandVolumeRequest and multiple PVs with the same volumeId have conflicting disableVerifyCapacity values
+- **THEN** the verifySectorSize function logs a warning about the conflict and skips verification (returns nil)
+
+#### Scenario: Handle SelectBackend returning nil with error for expand
+- **WHEN** the CO sends a ControllerExpandVolumeRequest and SelectBackend returns (nil, error)
+- **THEN** the driver condition `backend == nil || err != nil` evaluates to true, and returns codes.Internal error "Backend <name> doesn't exist"

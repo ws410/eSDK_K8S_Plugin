@@ -18,3 +18,11 @@ The admission webhook shall validate StorageBackendContent resources to ensure t
 #### Scenario: Validate SBCT with valid configuration
 - **WHEN** a user creates an SBCT with all required fields and valid formats
 - **THEN** the webhook allows the request
+
+#### Scenario: Validate SBCT SecretMeta format
+- **WHEN** a user creates an SBCT with SecretMeta not in "<namespace>/<name>" format
+- **THEN** the webhook rejects the request with a format error
+
+#### Scenario: Validate SBCT MaxClientThreads range
+- **WHEN** a user creates or updates an SBCT with MaxClientThreads outside the valid range
+- **THEN** the webhook rejects the request with a range validation error

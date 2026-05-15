@@ -34,3 +34,11 @@ The `oceanctl collect logs` command shall collect pod logs from one or all nodes
 #### Scenario: Collect logs with symlink skipping
 - **WHEN** the CLI encounters symbolic links during log file collection
 - **THEN** the CLI skips the symbolic links during compression
+
+#### Scenario: Group pods by node for log collection
+- **WHEN** the CLI collects logs from all nodes
+- **THEN** it queries all pods in the namespace, groups them by node name, and creates a separate log directory for each node
+
+#### Scenario: Collect logs concurrently with thread limit
+- **WHEN** the CLI collects logs from multiple nodes
+- **THEN** it limits concurrent node log collection to maxNodeThreads (default based on configuration) goroutines to prevent overwhelming the API server

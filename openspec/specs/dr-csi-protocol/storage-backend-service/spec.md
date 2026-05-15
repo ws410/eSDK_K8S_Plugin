@@ -18,3 +18,11 @@ The DR-CSI StorageBackend gRPC service shall provide backend registration, statu
 #### Scenario: Unregister a backend
 - **WHEN** a backend is deleted
 - **THEN** the service unregisters the backend, logs out from the storage array, and releases the client connection
+
+#### Scenario: Register backend with cache consistency check
+- **WHEN** a backend is registered via DR-CSI
+- **THEN** the service adds it to the backend cache via AddBackendToCache, which builds the backend, analyzes pools, adds protocol topology, and initializes the plugin with login
+
+#### Scenario: Handle backend registration failure
+- **WHEN** backend.BuildBackend fails during registration (invalid config, plugin init failure)
+- **THEN** the service returns a gRPC error with the build failure reason and does not add the backend to cache

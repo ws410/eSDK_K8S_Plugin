@@ -22,3 +22,7 @@ The DeleteVolume RPC shall delete a volume from Huawei storage backends. The Vol
 #### Scenario: Delete volume when backend selection fails
 - **WHEN** the CO sends a DeleteVolumeRequest and the backend selection returns an error (backend exists but selection fails)
 - **THEN** the driver treats it the same as backend not found, returns success with empty response, and logs a warning
+
+#### Scenario: Delete volume when backend selector returns error but backend exists
+- **WHEN** the CO sends a DeleteVolumeRequest and SelectBackend returns (nil, error) - meaning the backend exists in SBCT but registration/building failed
+- **THEN** the driver condition `bk == nil || err != nil` evaluates to true, logs a warning about the backend not existing, and returns success (idempotent behavior)

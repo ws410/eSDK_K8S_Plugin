@@ -30,3 +30,27 @@ The OceanStor plugin shall implement the StoragePlugin interface for oceanstor-s
 #### Scenario: Expand volume
 - **WHEN** ExpandVolume is called
 - **THEN** the plugin expands the LUN/FileSystem to the new size and returns whether node expansion is required
+
+#### Scenario: Delete volume
+- **WHEN** DeleteVolume is called
+- **THEN** the plugin deletes the LUN or FileSystem from the storage array
+
+#### Scenario: Query volume
+- **WHEN** QueryVolume is called
+- **THEN** the plugin returns volume metadata including size, LUN WWN, and other attributes
+
+#### Scenario: Detach volume
+- **WHEN** DetachVolume is called
+- **THEN** the plugin removes the host mapping for the volume from the specified host
+
+#### Scenario: Delete snapshot
+- **WHEN** DeleteSnapshot is called with snapshotParentId and snapshotName
+- **THEN** the plugin deletes the HyperSnap snapshot from the storage array
+
+#### Scenario: Handle Dorado V6/V7 client switch
+- **WHEN** the plugin detects the storage array is Dorado V6 or V7
+- **THEN** it switches from the standard client to the V6 client and configures LIF (Logical Interface) management for NAS operations
+
+#### Scenario: Support QoS parameter validation
+- **WHEN** SupportQoSParameters is called with QoS configuration
+- **THEN** the plugin validates the QoS parameters against the storage array's supported QoS types (IOPS, bandwidth)

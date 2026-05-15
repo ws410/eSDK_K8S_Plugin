@@ -54,3 +54,23 @@ The pool filtering system shall filter candidate storage pools through multiple 
 #### Scenario: Reject when no pools match
 - **WHEN** no pools pass all filter stages
 - **THEN** the system returns an error "no storage pool meets the requirements" with details about which filter stage failed
+
+#### Scenario: Filter pools by storage pool name
+- **WHEN** the CreateVolume request specifies storagepool in StorageClass parameters
+- **THEN** the filterByStoragePool function selects only pools matching the specified pool name (if empty string, all pools pass)
+
+#### Scenario: Filter pools by application type
+- **WHEN** the CreateVolume request specifies applicationType in StorageClass parameters
+- **THEN** the filterByApplicationType function selects only pools with SupportApplicationType=true (Dorado V6/V7 only); if applicationType is empty, all pools pass
+
+#### Scenario: Filter pools by storage quota
+- **WHEN** the CreateVolume request specifies storageQuota in StorageClass parameters
+- **THEN** the filterByStorageQuota function selects only pools with SupportQuota=true and validates the quota configuration using fsUtils.IsStorageQuotaAvailable; returns error if quota validation fails
+
+#### Scenario: Validate backend name for managed volume
+- **WHEN** a managed volume (volume import) request is processed
+- **THEN** the validateBackendName function compares the backend name from StorageClass parameters with the PVC annotation backend name; returns error if they differ
+
+#### Scenario: Validate volume type for managed volume
+- **WHEN** a managed volume (volume import) request is processed
+- **THEN** the validateVolumeType function verifies that the volumeType from StorageClass matches the backend's pool storage type using filterByVolumeType; returns error "filterPools is empty" if mismatch

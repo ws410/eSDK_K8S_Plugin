@@ -14,3 +14,11 @@ The FC connector shall implement the VolumeConnector interface to connect/discon
 #### Scenario: Handle FC HBA not found
 - **WHEN** the node has no FC HBAs installed
 - **THEN** the connector returns an error indicating no FC initiator exists
+
+#### Scenario: Rescan FC HBA
+- **WHEN** the connector needs to discover new FC LUNs
+- **THEN** it triggers a rescan on all available FC HBAs by writing to the sysfs issue_lip and scan files
+
+#### Scenario: Clear residual path by LUN ID
+- **WHEN** CleanDeviceByLunId is called with host LUN ID and target WWNs
+- **THEN** the connector removes stale device paths associated with the LUN ID to prevent conflicts with new connections

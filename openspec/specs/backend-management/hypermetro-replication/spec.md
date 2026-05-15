@@ -26,3 +26,19 @@ The hyperMetro-replication system shall manage hyperMetro (active-active) and re
 #### Scenario: Handle hyperMetro configuration mismatch
 - **WHEN** a backend has metroBackend but missing both hyperMetroDomain and metrovStorePairID
 - **THEN** the backend initialization fails with "hyperMetro configuration is incorrect"
+
+#### Scenario: Reject hyperMetro with only metroBackend but no domain or vStore
+- **WHEN** a backend configuration has metroBackend set but both hyperMetroDomain and metrovStorePairID are empty
+- **THEN** the NewBackend function returns error "hyperMetro configuration in backend <name> is incorrect" (condition: (metroDomain == "" && metrovStorePairID == "") && metroBackend != "")
+
+#### Scenario: Reject hyperMetro with domain/vStore but no metroBackend
+- **WHEN** a backend configuration has hyperMetroDomain or metrovStorePairID set but metroBackend is empty
+- **THEN** the NewBackend function returns error "hyperMetro configuration in backend <name> is incorrect" (condition: (metroDomain != "" || metrovStorePairID != "") && metroBackend == "")
+
+#### Scenario: SelectRemotePool rejects hyperMetro with nil MetroBackend
+- **WHEN** SelectRemotePool is called with hyperMetro=true but the local backend's MetroBackend field is nil
+- **THEN** the function returns error "no metro backend of <name> exists for volume: <params>"
+
+#### Scenario: SelectRemotePool bug - uses local pools for replication
+- **WHEN** SelectRemotePool is called with replication=true
+- **THEN** the function loads the local backend and uses localBackend.Pools (not ReplicaBackend.Pools) for filtering with SecondaryFilterFuncs (this appears to be a code bug - it should use ReplicaBackend.Pools)

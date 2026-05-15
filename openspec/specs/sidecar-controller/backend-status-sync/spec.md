@@ -18,3 +18,11 @@ The sidecar controller shall periodically poll the DR-CSI provider for storage b
 #### Scenario: Sync backend status when backend is newly registered
 - **WHEN** a new backend is registered in the DR-CSI provider
 - **THEN** the sidecar controller creates a new StorageBackendContent and populates its status
+
+#### Scenario: Handle backend registration via LoadOrRebuildOneBackend
+- **WHEN** the sidecar controller detects a backend content name change
+- **THEN** it calls LoadOrRebuildOneBackend which deletes the stale cache entry and re-registers the backend from the updated SBCT
+
+#### Scenario: Sync backend status with MetroBackend linking
+- **WHEN** the sidecar controller updates a backend's cache entry
+- **THEN** UpdateCacheBackendMetro is called to establish MetroBackend references between reciprocal hyperMetro partner backends

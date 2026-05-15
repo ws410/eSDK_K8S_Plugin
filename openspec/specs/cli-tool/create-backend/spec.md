@@ -50,3 +50,11 @@ The `oceanctl create backend` command shall create a StorageBackendClaim by load
 #### Scenario: Exit create-backend interactively
 - **WHEN** the user enters 'exit' during the backend selection prompt
 - **THEN** the CLI exits without creating any backend
+
+#### Scenario: Set default maxClientThreads by storage type
+- **WHEN** the user creates a backend without specifying maxClientThreads
+- **THEN** the CLI sets the default value based on storage type (different defaults for oceanstor-san, fusionstorage-san, DME-managed backends, etc.)
+
+#### Scenario: Auto-build backend name when not-validate-name is set
+- **WHEN** the user runs `oceanctl create backend` with --not-validate-name flag
+- **THEN** the CLI skips DNS name validation and auto-builds a valid backend name from the original name using helper.BuildBackendName (converting invalid characters to lowercase alphanumeric or '-')

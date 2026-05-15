@@ -22,3 +22,11 @@ The volume-modify-controller shall process each VolumeModifyContent by calling t
 #### Scenario: Rollback content on VMC deletion
 - **WHEN** a VMC is being deleted and its Content is in "InProgress"
 - **THEN** the controller cancels the modification and sets the Content Phase to "Completed" (rollback)
+
+#### Scenario: Skip content processing when VMC is in Rollback phase
+- **WHEN** the controller reconciles a VMC in "Rollback" phase
+- **THEN** it cancels in-progress modifications and waits for all Contents to complete rollback before transitioning to "Deleting"
+
+#### Scenario: Handle DR-CSI connection failure during modification
+- **WHEN** the controller cannot connect to the DR-CSI gRPC server during ModifyVolume call
+- **THEN** the Content is marked as "Failed" with the connection error, and will be retried on the next reconcile cycle

@@ -26,3 +26,11 @@ The StorageBackendClaim (SBC) is a namespaced Custom Resource that represents a 
 #### Scenario: SBC short name
 - **WHEN** a user uses the short name
 - **THEN** `sbc` is accepted as an alias for StorageBackendClaim
+
+#### Scenario: SBC immutable Provider field
+- **WHEN** a user attempts to update an existing SBC's Provider field
+- **THEN** the update is rejected by the admission webhook (Provider is immutable after creation)
+
+#### Scenario: SBC with UseCert enabled
+- **WHEN** a user creates an SBC with UseCert=true
+- **THEN** the CertSecret field must be populated with the certificate Secret name; the controller will use the certificate for backend authentication

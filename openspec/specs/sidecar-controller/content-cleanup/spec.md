@@ -10,3 +10,11 @@ The sidecar controller shall handle StorageBackendContent cleanup when the corre
 #### Scenario: Handle Content deletion when SBC still exists
 - **WHEN** the sidecar controller attempts to delete a Content that still has a bound SBC
 - **THEN** the controller logs a warning and lets the storage-backend-controller handle the SBC cleanup
+
+#### Scenario: Remove backend from cache on deletion
+- **WHEN** RemoveOneBackend is called with a storageBackendId
+- **THEN** the cache provider deletes the backend entry from the cache and logs the removal
+
+#### Scenario: Check consistency removes stale cached backends
+- **WHEN** CheckConsistency runs after backend registration
+- **THEN** it compares cached backends against the SBCT list; any cached backend not found in the SBCT list or with Online=false is deleted from the cache

@@ -22,3 +22,15 @@ The admission webhook shall validate StorageBackendClaim resources to ensure the
 #### Scenario: Validate SBC with valid configuration
 - **WHEN** a user creates an SBC with all required fields and valid formats
 - **THEN** the webhook allows the request
+
+#### Scenario: Validate SBC MaxClientThreads range
+- **WHEN** a user creates or updates an SBC with MaxClientThreads outside the valid range
+- **THEN** the webhook rejects the request with a range validation error
+
+#### Scenario: Validate SBC Parameters format
+- **WHEN** a user creates an SBC with Parameters that contain invalid key-value format
+- **THEN** the webhook rejects the request with a parameter format error
+
+#### Scenario: Validate SBC UseCert and CertSecret consistency
+- **WHEN** a user creates an SBC with UseCert=true but CertSecret is empty
+- **THEN** the webhook rejects the request indicating CertSecret is required when UseCert is enabled

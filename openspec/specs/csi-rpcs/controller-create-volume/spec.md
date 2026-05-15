@@ -122,3 +122,31 @@ The CreateVolume RPC shall create a new volume on Huawei storage backends (LUN, 
 #### Scenario: Create volume with capacity alignment to sector size
 - **WHEN** the CO sends a CreateVolumeRequest with RequiredBytes that is not an integer multiple of the storage pool's sector size
 - **THEN** the driver rounds up the capacity to the next sector size multiple using TransVolumeCapacity, logs the capacity adjustment, and returns the actual (aligned) CapacityBytes in the response
+
+#### Scenario: Create volume with cloneFrom parameter
+- **WHEN** the CO sends a CreateVolumeRequest with StorageClass parameter cloneFrom set to "backendName.volumeName"
+- **THEN** the driver parses the cloneFrom value using utils.SplitVolumeId to extract sourceBackendName and sourceVolumeName, sets them in parameters as "backend" and "cloneFrom", filters pools by SupportClone capability, and creates a cloned volume
+
+#### Scenario: Create volume with storagepool parameter
+- **WHEN** the CO sends a CreateVolumeRequest with StorageClass parameter storagepool set to a specific pool name
+- **THEN** the driver passes storagepool to the backend, and the filterByStoragePool function selects only pools matching the specified name (if empty, all pools pass)
+
+#### Scenario: Create volume with applicationType parameter
+- **WHEN** the CO sends a CreateVolumeRequest with StorageClass parameter applicationType set
+- **THEN** the driver filters pools by SupportApplicationType capability (only Dorado V6/V7 support this), and passes the applicationType to the plugin for volume creation
+
+#### Scenario: Create volume with storageQuota parameter
+- **WHEN** the CO sends a CreateVolumeRequest with StorageClass parameter storageQuota set
+- **THEN** the driver filters pools by SupportQuota capability, validates the storage quota configuration using fsUtils.IsStorageQuotaAvailable, and creates the volume with quota settings
+
+#### Scenario: Create volume with volumeName annotation
+- **WHEN** the CO sends a CreateVolumeRequest where the PVC annotation contains driverName + "/volumeName"
+- **THEN** the driver validates the annotation value is not empty, sets it as "annVolumeName" in parameters for use by the backend plugin
+
+#### Scenario: Create DTree volume with automatic parent selection
+- **WHEN** the CO sends a CreateVolumeRequest with volumeType=dtree but no parentname specified in StorageClass
+- **THEN** the selectDtreePool function filters candidate pools to only those with a non-empty GetDTreeParentName(), and returns error "no found any available dtree backend for volume" if no such pools exist
+
+#### Scenario: Reject CreateVolume when DTree pool has no available parent
+- **WHEN** the CO sends a CreateVolumeRequest with volumeType=dtree and all candidate DTree pools have empty DTreeParentName
+- **THEN** the driver returns an error "no found any available dtree backend for volume"

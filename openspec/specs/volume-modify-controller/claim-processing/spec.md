@@ -26,3 +26,15 @@ The volume-modify-controller shall watch VolumeModifyClaim resources, find match
 #### Scenario: Handle VMC with no matching PVs
 - **WHEN** a VMC is created but no PVs match the Source StorageClass
 - **THEN** the controller sets the VMC Phase to "Completed" immediately with Ready="0/0"
+
+#### Scenario: Handle VMC deletion with finalizer
+- **WHEN** a VMC is deleted while in "Creating" or "Completed" phase
+- **THEN** the controller processes the deletion via finalizer, sets Phase to "Rollback" if in "Creating", waits for VContents to complete rollback, then removes the finalizer and deletes the VMC
+
+#### Scenario: Process VMC with exponential backoff for failed Contents
+- **WHEN** a VolumeModifyContent fails during modification
+- **THEN** the controller retries with exponential backoff (baseDelay=5s, maxDelay=5min) until the Content succeeds or the VMC is deleted
+
+#### Scenario: Skip VMC processing when no Contents need processing
+- **WHEN** the VMC reconcile loop runs and all associated VContents are in "Completed" or "Failed" state
+- **THEN** the controller updates the VMC Phase to "Completed" and records the CompletedAt timestamp

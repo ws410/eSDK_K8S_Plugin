@@ -22,3 +22,15 @@ The iSCSI connector shall implement the VolumeConnector interface to connect/dis
 #### Scenario: Handle CHAP authentication
 - **WHEN** the iSCSI target requires CHAP authentication
 - **THEN** the connector configures CHAP credentials before logging in
+
+#### Scenario: Clear residual path by WWN
+- **WHEN** clearResidualPath is called with a device WWN
+- **THEN** the connector checks for stale device paths associated with the WWN and removes them before establishing a new connection
+
+#### Scenario: Resize block device
+- **WHEN** ResizeBlock is called with device WWN and new size
+- **THEN** the connector rescans the SCSI device to pick up the new size and verifies the block device reflects the updated capacity
+
+#### Scenario: Resize filesystem
+- **WHEN** ResizeMountPath is called with a mount point path
+- **THEN** the connector runs filesystem resize (e.g., resize2fs for ext*, xfs_growfs for xfs) to expand the filesystem to fill the resized block device

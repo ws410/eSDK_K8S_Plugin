@@ -22,3 +22,7 @@ The `oceanctl update cert` command shall replace the TLS certificate in the exis
 #### Scenario: Reject update-cert without backend name
 - **WHEN** the user runs `oceanctl update cert -f cert.crt` without -b flag
 - **THEN** the CLI validator rejects the request (ValidateBackend)
+
+#### Scenario: Update cert with rollback on failure
+- **WHEN** the Secret update fails
+- **THEN** the CLI restores the original Secret data

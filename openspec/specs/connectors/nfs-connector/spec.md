@@ -42,3 +42,15 @@ The NFS connector shall implement the VolumeConnector interface to mount/unmount
 #### Scenario: Reject mount with missing target path
 - **WHEN** the connector receives a ConnectVolume request without targetPath
 - **THEN** the connector returns error "there are no target path in the connection info"
+
+#### Scenario: Mount NFS share with DPC/DTFS protocol mount option
+- **WHEN** the connector receives a ConnectVolume request with protocol=dpc or protocol=dtfs
+- **THEN** the parseNFSInfo function sets mntDashT to the protocol type, which is passed to the mount command as the -t option
+
+#### Scenario: Mount block device with XFS nouuid option
+- **WHEN** the connector mounts a block device with fsType=xfs and the source is a /dev/* device
+- **THEN** the mountDisk function automatically adds "nouuid" to the mount options to allow cloned volumes with the same UUID to be mounted
+
+#### Scenario: Reject mount when disk size exceeds 512TiB
+- **WHEN** the connector receives a ConnectVolume request with srcType=block and the device size is greater than 512TiB
+- **THEN** the getDiskSizeType function returns an error "the disk size does not support"

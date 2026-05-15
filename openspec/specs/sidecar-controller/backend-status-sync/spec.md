@@ -1,28 +1,32 @@
 ## ADDED Requirements
 
-### Requirement: backend-status-sync shall poll backend status from DR-CSI
-The sidecar controller shall periodically poll the DR-CSI provider for storage backend status and update the corresponding StorageBackendContent resources.
+### Requirement: backend-status-sync shall process SBCT informer events and trigger status updates
+The sidecar controller processes StorageBackendContent informer events (Add/Update/Delete) and triggers status updates via the DR-CSI provider's GetBackendStats gRPC service. The sidecar does NOT discover new backends from DR-CSI that don't have corresponding SBCTs -- it only processes SBCTs that exist as Kubernetes CRDs. LoadOrRebuildOneBackend and UpdateCacheBackendMetro are handled by the DR-CSI provider, not the sidecar.
 
 #### Scenario: Poll backend status via DR-CSI
-- **WHEN** the sidecar controller runs its sync loop
-- **THEN** it connects to the DR-CSI gRPC server, calls the StorageBackend service to get backend status (online, capabilities, capacity, pools, specifications), and updates the corresponding SBCT status
+- **WHEN** the sidecar controller's worker picks up an SBCT from the content queue
+- **THEN** the syncContent task flow runs: initContentStatusTask initializes status if nil, deleteContentTask handles deletion if DeletionTimestamp is set, createContentTask registers backend with provider if not ready, updateContentTask updates backend credentials if spec changed, and getContentTask fetches stats via GetBackendStats gRPC call
 
-#### Scenario: Sync backend status for all registered backends
-- **WHEN** the sidecar controller polls
-- **THEN** it iterates through all registered backends in the DR-CSI provider and updates each corresponding SBCT
+#### Scenario: Sync backend status for existing SBCTs only
+- **WHEN** the sidecar controller processes SBCT informer events
+- **THEN** it only processes SBCTs that exist as Kubernetes CRDs; the sidecar does NOT discover new backends from the DR-CSI provider that don't have corresponding SBCT CRDs
 
 #### Scenario: Handle DR-CSI connection failure
-- **WHEN** the sidecar controller cannot connect to the DR-CSI gRPC server
-- **THEN** it logs the error and retries on the next sync cycle
+- **WHEN** the sidecar controller's GetBackendStats gRPC call fails due to connection error
+- **THEN** the error propagates up the task flow, the item is re-queued with exponential backoff (5s start, 5min max), and will be retried on the next worker cycle
 
-#### Scenario: Sync backend status when backend is newly registered
-- **WHEN** a new backend is registered in the DR-CSI provider
-- **THEN** the sidecar controller creates a new StorageBackendContent and populates its status
+#### Scenario: Skip sidecar processing for non-matching provider
+- **WHEN** the sidecar controller receives an SBCT event
+- **THEN** the isMatchProvider function checks if content.Spec.Provider matches the sidecar's provider name; if not, the SBCT is skipped (each sidecar instance only processes SBCTs for its own provider)
 
-#### Scenario: Handle backend registration via LoadOrRebuildOneBackend
-- **WHEN** the sidecar controller detects a backend content name change
-- **THEN** it calls LoadOrRebuildOneBackend which deletes the stale cache entry and re-registers the backend from the updated SBCT
+#### Scenario: Optimize enqueue with needEnQueue check
+- **WHEN** the sidecar informer receives an SBCT Update event
+- **THEN** the needEnQueue function checks if only Pools, Capabilities, or Specification fields changed in status; if so, skips enqueue to prevent infinite loops (since the controller itself updates these fields)
 
-#### Scenario: Sync backend status with MetroBackend linking
-- **WHEN** the sidecar controller updates a backend's cache entry
-- **THEN** UpdateCacheBackendMetro is called to establish MetroBackend references between reciprocal hyperMetro partner backends
+#### Scenario: LoadOrRebuildOneBackend handled by DR-CSI provider
+- **WHEN** the CSI driver's BackendSelector.SelectBackend is called with a content name that differs from the cached backend's ContentName
+- **THEN** the DR-CSI provider (not the sidecar) calls LoadOrRebuildOneBackend which deletes the stale cache entry and re-registers the backend from the updated SBCT
+
+#### Scenario: UpdateCacheBackendMetro handled by DR-CSI provider
+- **WHEN** a backend is added or updated in the cache via AddBackendToCache or UpdateCacheBackend
+- **THEN** the DR-CSI provider (not the sidecar) calls UpdateCacheBackendMetro to establish MetroBackend references between reciprocal hyperMetro partner backends

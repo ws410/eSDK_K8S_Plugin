@@ -62,3 +62,19 @@ The DTree plugin (OceanstorDTreePlugin) shall implement the StoragePlugin interf
 #### Scenario: Validate DTree parameters
 - **WHEN** Validate is called
 - **THEN** the plugin verifies config parameters, validates DTree-specific params (protocol, portals, parentname), creates a test client, performs ValidateLogin, and logs out
+
+#### Scenario: Create DTree volume with Dorado V6/V7 volume name template
+- **WHEN** CreateVolume is called for a DTree volume on Dorado V6/V7 storage
+- **THEN** the plugin calls getVolumeNameFromPVNameOrParameters to resolve the volume name from the PV name template (validating it contains {{.PVCNamespace}} and {{.PVCName}}, executing with metadata and appending "-{{.PVCUid}}")
+
+#### Scenario: Create DTree volume with parentname mismatch rejection
+- **WHEN** CreateVolume is called with both StorageClass parentname and backend parentname set to different values
+- **THEN** the getValidParentname function returns an error indicating the parentname values do not match
+
+#### Scenario: Attach DTree volume with parentName resolution priority
+- **WHEN** AttachVolume is called for a DTree volume
+- **THEN** the attachDTreeVolume function first checks volumeContext[DTreeParentKey]; if found, returns it; otherwise returns empty map; the plugin then falls back to p.parentName if the result is empty
+
+#### Scenario: Reject Attach DTree volume when parentName is missing
+- **WHEN** AttachVolume is called for a DTree volume with nfsAutoAuthClient enabled and parentName cannot be determined (not in volumeContext and not in plugin config)
+- **THEN** the plugin returns error "failed to get parent name"

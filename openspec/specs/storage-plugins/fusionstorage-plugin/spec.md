@@ -44,3 +44,39 @@ The FusionStorage plugin shall implement the StoragePlugin interface for fusions
 #### Scenario: Create FusionStorage snapshot
 - **WHEN** CreateSnapshot is called
 - **THEN** the plugin creates a snapshot and returns the snapshot metadata
+
+#### Scenario: Attach FusionStorage SAN volume with SCSI protocol
+- **WHEN** AttachVolume is called for a fusionstorage-san backend with protocol=scsi
+- **THEN** the plugin uses the portals map[hostname]IP to identify the target storage node, calls cli.AttachVolume with the LUN name and manage IP, and returns mapping info containing only tgtLunWWN
+
+#### Scenario: Attach FusionStorage SAN volume with iSCSI protocol and iscsiLinks
+- **WHEN** AttachVolume is called for a fusionstorage-san backend with protocol=iscsi and iscsiLinks configured
+- **THEN** the attacher uses dynamic portal discovery via getTargetPortalsDynamic to query available iSCSI target portals from the storage array
+
+#### Scenario: Create FusionStorage SAN snapshot with name transformation
+- **WHEN** CreateSnapshot is called for a fusionstorage-san volume
+- **THEN** the plugin transforms the snapshot name via utils.GetFusionStorageSnapshotName before creating the snapshot on the array
+
+#### Scenario: Delete FusionStorage SAN snapshot with name transformation
+- **WHEN** DeleteSnapshot is called for a fusionstorage-san volume
+- **THEN** the plugin transforms the snapshot name via utils.GetFusionStorageSnapshotName before deleting the snapshot from the array
+
+#### Scenario: FusionStorage SAN supports QoS and Clone
+- **WHEN** UpdateBackendCapabilities is called for fusionstorage-san
+- **THEN** the plugin sets SupportThin=true, SupportThick=false, SupportQoS=true, SupportClone=true
+
+#### Scenario: FusionStorage NAS supports Quota
+- **WHEN** UpdateBackendCapabilities is called for fusionstorage-nas
+- **THEN** the plugin sets SupportThin=true, SupportThick=false, SupportQoS=true, SupportQuota=true, SupportClone=false, and checks NFS4/NFS41 capabilities via updateNFS4Capability
+
+#### Scenario: Reject FusionStorage NAS snapshot
+- **WHEN** CreateSnapshot is called for a fusionstorage-nas volume
+- **THEN** the plugin returns error "fusionstorage-nas not support snapshot feature"
+
+#### Scenario: Reject FusionStorage DTree DeleteVolume
+- **WHEN** DeleteVolume is called for a fusionstorage-dtree volume
+- **THEN** the plugin returns error "fusionstorage-dtree not support DeleteVolume feature"; use DeleteDTreeVolume instead
+
+#### Scenario: Reject FusionStorage DTree ExpandVolume
+- **WHEN** ExpandVolume is called for a fusionstorage-dtree volume
+- **THEN** the plugin returns error "fusionstorage-dtree not support ExpandVolume feature"; use ExpandDTreeVolume instead

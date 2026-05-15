@@ -62,3 +62,47 @@ The NodeStageVolume RPC shall prepare a volume for use on the node by staging it
 #### Scenario: Clear residual path with LUN ID for UltraPath only
 - **WHEN** the SanManager StageVolume runs clearResidualPathWithLunId task
 - **THEN** the function checks if VolumeUseMultiPath=true AND MultiPathType=HWUltraPath AND protocol is "iscsi" or "fc"; if all conditions met, it calls connector.CleanDeviceByLunId to clean stale devices by LUN ID before connecting
+
+#### Scenario: Stage volume with NVMe CLI version check
+- **WHEN** the CO sends a NodeStageVolumeRequest for a volume on an NVMe protocol backend
+- **THEN** the NVMe connector validates that the installed nvme-cli version is >= 1.9 before proceeding with connection; if the version is too old, returns an error
+
+#### Scenario: Stage SAN filesystem volume with XFS nouuid mount option
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume with fsType=xfs
+- **THEN** the mountDisk function automatically adds "nouuid" to the mount options to allow cloned volumes with the same UUID to be mounted on the same node
+
+#### Scenario: Stage block volume with legacy symlink handling
+- **WHEN** the CO sends a NodeStageVolumeRequest for a block volume and the staging target path is a symlink (legacy pre-V4.6.0 format)
+- **THEN** the BindMountRawBlockDevice function removes the symlink and recreates the target path as a regular file before performing the bind mount
+
+#### Scenario: Stage SAN filesystem volume with disk size-based mkfs strategy
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume on an unformatted block device
+- **THEN** the getDiskSizeType function determines the mkfs template based on device size: <=0.5TiB="default", 0.5-1TiB="big", 1-10TiB="huge", 10-100TiB="large", 100-512TiB="veryLarge", >512TiB returns error; the formatDisk function applies the corresponding mkfs template (e.g., "-T big" for ext filesystems)
+
+#### Scenario: Reject stage volume when disk size exceeds maximum
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume on an unformatted block device larger than 512TiB
+- **THEN** the getDiskSizeType function returns an error "the disk size does not support"
+
+#### Scenario: Stage SAN filesystem volume with concurrent formatting detection
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume and another process is already formatting the device
+- **THEN** the formatDisk function detects "in use by the system" in the mkfs output, sleeps 10 seconds, and returns an error
+
+#### Scenario: Stage SAN filesystem volume with partition device skipping
+- **WHEN** the clearResidualPathWithWwn task scans /dev/disk/by-id/ for device paths
+- **THEN** partition devices (e.g., sdc1, nvme0n1p1, dm-1 with trailing digits) are explicitly skipped during residual path detection
+
+#### Scenario: Stage SAN filesystem volume with blkid exit code 2 handling
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume and blkid returns exit code 2
+- **THEN** the getFSType function calls connector.IsDeviceFormatted to verify if the device is actually formatted; if formatted but blkid fails, returns an ambiguous error
+
+#### Scenario: Stage SAN filesystem volume with resize after mount
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume on an already-formatted device with accessMode that is not MULTI_NODE_MULTI_WRITER or MULTI_NODE_READER_ONLY
+- **THEN** after mounting, the connector.ResizeMountPath function is called to resize the filesystem (resize2fs for ext*, xfs_growfs for xfs)
+
+#### Scenario: Stage SAN filesystem volume skipping resize for multi-node access
+- **WHEN** the CO sends a NodeStageVolumeRequest for a SAN filesystem volume with accessMode=MULTI_NODE_MULTI_WRITER or MULTI_NODE_READER_ONLY
+- **THEN** the resize step is skipped after mounting to prevent conflicts with other nodes
+
+#### Scenario: Stage volume with DPC/DTFS protocol mount option
+- **WHEN** the CO sends a NodeStageVolumeRequest for a NAS volume with protocol=dpc or protocol=dtfs
+- **THEN** the parseNFSInfo function sets mntDashT to the appropriate protocol type for the mount command

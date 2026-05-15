@@ -14,3 +14,15 @@ The DR-CSI Identity gRPC service shall provide provider identification for the d
 #### Scenario: DR-CSI Identity server registration
 - **WHEN** the CSI controller starts
 - **THEN** registerDRCSIServer creates a Provider with driver name and version, and registers the IdentityServer, StorageBackendServer, and ModifyVolumeInterfaceServer on the DR-CSI gRPC server listening on the DR endpoint
+
+#### Scenario: Probe always returns success
+- **WHEN** the DR-CSI client calls Probe
+- **THEN** the service always returns an empty ProbeResponse with the ready field unset (nil); no health checking is performed -- the provider always appears ready regardless of actual backend state
+
+#### Scenario: GetProviderInfo manifest field is never populated
+- **WHEN** the DR-CSI client calls GetProviderInfo
+- **THEN** the service returns provider name and version but the manifest map field is never populated (always empty)
+
+#### Scenario: GetProviderCapabilities hardcodes STORAGE_BACKEND_SERVICE
+- **WHEN** the DR-CSI client calls GetProviderCapabilities
+- **THEN** the service returns a hardcoded capability list containing only STORAGE_BACKEND_SERVICE; it does NOT dynamically check which capabilities are actually available

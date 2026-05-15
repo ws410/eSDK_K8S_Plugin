@@ -34,3 +34,11 @@ The NFS+ connector shall implement the VolumeConnector interface to mount/unmoun
 #### Scenario: Handle conflicting mount
 - **WHEN** the connector detects the targetPath is already mounted to a different source
 - **THEN** it returns error "The mount <targetPath> is already exist, source: <requested> realSource: <actual>"
+
+#### Scenario: Mount NFS+ with IP/domain format consistency check
+- **WHEN** the connector receives a ConnectVolume request with portals containing a mix of IP addresses and domain names
+- **THEN** the parseNFSPlusInfo function validates that all portals are either all IPs or all domains (cannot mix), returning an error if the format is inconsistent
+
+#### Scenario: Mount NFS+ with single portal
+- **WHEN** the connector receives a ConnectVolume request with a single portal in the portals list
+- **THEN** the connector still constructs the remoteaddrs mount option with the single portal (no "~" separator needed for single portal)

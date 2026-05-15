@@ -38,3 +38,35 @@ The ControllerPublishVolume RPC shall attach (publish) a volume to a specific no
 #### Scenario: Reject ControllerPublishVolume with invalid nodeId JSON
 - **WHEN** the CO sends a ControllerPublishVolumeRequest with a NodeId that cannot be unmarshaled as JSON
 - **THEN** the driver returns codes.Internal error with the unmarshal error message
+
+#### Scenario: Publish volume with HyperMetro dual-site mapping info merge
+- **WHEN** the CO sends a ControllerPublishVolumeRequest for a volume on a HyperMetro-enabled OceanStor SAN backend with both local and remote storage online
+- **THEN** the metroHandler calls MetroAttacher.ControllerAttach which merges mapping info from both sites: for iSCSI, appends tgtPortals, tgtIQNs, and tgtHostLUNs arrays; for FC, appends tgtWWNs and tgtHostLUNs arrays, returning combined mapping info for multi-path access
+
+#### Scenario: Publish volume with HyperMetro local-only fallback
+- **WHEN** the CO sends a ControllerPublishVolumeRequest for a HyperMetro volume where only the local storage is online (remote is offline)
+- **THEN** the handler method falls back to commonHandler using the local client, returning only local-site mapping info
+
+#### Scenario: Publish volume with HyperMetro remote-only fallback
+- **WHEN** the CO sends a ControllerPublishVolumeRequest for a HyperMetro volume where only the remote storage is online (local is offline)
+- **THEN** the handler method falls back to commonHandler using the remote client, returning only remote-site mapping info
+
+#### Scenario: Reject ControllerPublishVolume when initiator conflicts with another host
+- **WHEN** the CO sends a ControllerPublishVolumeRequest and the backend plugin detects the initiator (iSCSI IQN or FC WWPN) is already associated with a different host on the storage array
+- **THEN** the plugin returns an error indicating the initiator is already in use by another host
+
+#### Scenario: Publish volume with ALUA configuration update
+- **WHEN** the CO sends a ControllerPublishVolumeRequest and the attacher detects the host or initiator ALUA configuration differs from the current storage array configuration
+- **THEN** the attacher updates the initiator ALUA settings and/or host ALUA settings before completing the attach operation
+
+#### Scenario: Publish volume with host group and mapping group creation
+- **WHEN** the CO sends a ControllerPublishVolumeRequest and the host does not yet exist on the storage array
+- **THEN** the attacher creates the host, adds initiators, creates the host group, creates the mapping between the LUN and host group, and creates the namespace group (for Oceandisk), returning the mapping info
+
+#### Scenario: Publish volume with NFS auto-auth client CIDR filtering
+- **WHEN** the CO sends a ControllerPublishVolumeRequest for a DTree or NAS volume with nfsAutoAuthClient enabled
+- **THEN** the getFilteredIPs function retrieves the node's host IPs from the Secret, filters them by the configured CIDRs, and adds only matching IPs as authorized NFS clients with ReadWrite access
+
+#### Scenario: Reject ControllerPublishVolume when both local and remote storage are offline
+- **WHEN** the CO sends a ControllerPublishVolumeRequest for a HyperMetro volume and both local and remote storage are offline
+- **THEN** the getLunInfo function returns an error "both local and remote storage not online"

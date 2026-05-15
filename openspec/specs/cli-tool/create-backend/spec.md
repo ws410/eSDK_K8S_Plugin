@@ -58,3 +58,27 @@ The `oceanctl create backend` command shall create a StorageBackendClaim by load
 #### Scenario: Auto-build backend name when not-validate-name is set
 - **WHEN** the user runs `oceanctl create backend` with --not-validate-name flag
 - **THEN** the CLI skips DNS name validation and auto-builds a valid backend name from the original name using helper.BuildBackendName (converting invalid characters to lowercase alphanumeric or '-')
+
+#### Scenario: Create backend from YAML with multiple documents and duplicate detection
+- **WHEN** the user provides a YAML file with multiple backend documents (separated by "---") containing duplicate backend names
+- **THEN** the LoadBackendsFromYaml function detects the duplicate and returns error "the backend X already exists. Please check Y file"
+
+#### Scenario: Create backend with namespace precedence
+- **WHEN** the user runs `oceanctl create backend` with namespace specified in CLI flag, YAML file, and default
+- **THEN** the namespace precedence is: CLI flag (-n) > YAML file > default (huawei-csi)
+
+#### Scenario: Create backend with DME maxClientThreads default
+- **WHEN** the user creates a backend managed by DME (StorageDeviceSN is set)
+- **THEN** the setMaxClients function sets maxClientThreads to 5 (instead of the default 30 for non-DME backends)
+
+#### Scenario: Create backend with JSON auto-disabling name validation
+- **WHEN** the user provides a JSON config file
+- **THEN** the LoadBackendsFromJson function automatically sets NotValidateName=true, skipping DNS name validation for the backend name
+
+#### Scenario: Create backend deletes residual resources before creation
+- **WHEN** the user selects a backend for configuration
+- **THEN** the ConfigOneBackend function first calls deleteSbcReferenceResources to clean up any residual ConfigMap/Secret/SBC from previous failed attempts before creating new resources
+
+#### Scenario: Create backend prompts for username/password via stdin
+- **WHEN** the user selects a backend and the CLI creates the Secret
+- **THEN** the ToSecretConfig function prompts the user to enter username and password via stdin (interactive input)

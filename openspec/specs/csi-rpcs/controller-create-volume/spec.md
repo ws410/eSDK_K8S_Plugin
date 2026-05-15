@@ -150,3 +150,31 @@ The CreateVolume RPC shall create a new volume on Huawei storage backends (LUN, 
 #### Scenario: Reject CreateVolume when DTree pool has no available parent
 - **WHEN** the CO sends a CreateVolumeRequest with volumeType=dtree and all candidate DTree pools have empty DTreeParentName
 - **THEN** the driver returns an error "no found any available dtree backend for volume"
+
+#### Scenario: Create volume with advancedOptions parameter
+- **WHEN** the CO sends a CreateVolumeRequest with StorageClass parameter advancedOptions set to a JSON string
+- **THEN** the driver parses the JSON string into a map and merges it into the volume creation parameters via mergeAdvancedOptions during processCreateVolumeParametersAfterSelect, allowing storage-specific options to be passed to the backend plugin
+
+#### Scenario: Create volume with restoreMode for snapshot (SAN-specific)
+- **WHEN** the CO sends a CreateVolumeRequest with VolumeContentSource containing a Snapshot source and StorageClass parameter restoreMode="snapshot"
+- **THEN** the resolveSnapshotLunName function returns the snapshot LUN name instead of the original LUN name, and for non-hyperMetro volumes, the SAN plugin creates the volume from the snapshot LUN data
+
+#### Scenario: Create volume with restoreMode for hyperMetro snapshot
+- **WHEN** the CO sends a CreateVolumeRequest with VolumeContentSource containing a Snapshot source, restoreMode="snapshot", and hyperMetro="true"
+- **THEN** the resolveSnapshotLunName function returns the original LUN name (snapshot restore is not supported for hyperMetro volumes), and the volume is created from the original LUN
+
+#### Scenario: Create volume with processCreateVolumeParametersAfterSelect
+- **WHEN** the CO sends a CreateVolumeRequest and storage pool selection succeeds
+- **THEN** the processCreateVolumeParametersAfterSelect function sets storagepool, metroDomain, and remoteStoragePool from the selected pools, calls IsCapacityAvailable to verify sector alignment (unless disableVerifyCapacity is set), and merges advancedOptions into parameters
+
+#### Scenario: Reject CreateVolume when IsCapacityAvailable fails after pool selection
+- **WHEN** the CO sends a CreateVolumeRequest and processCreateVolumeParametersAfterSelect calls IsCapacityAvailable with disableVerifyCapacity=false and the capacity is not a multiple of sector size
+- **THEN** the driver returns codes.InvalidArgument error indicating the capacity is not a multiple of the sector size
+
+#### Scenario: Create volume with default description
+- **WHEN** the CO sends a CreateVolumeRequest without a description parameter
+- **THEN** the processDescription function sets the description to the default value "Created from Kubernetes CSI"
+
+#### Scenario: Reject CreateVolume when parentname requires backend
+- **WHEN** the CO sends a CreateVolumeRequest with parentname set but backend not set
+- **THEN** the processParentName function returns codes.InvalidArgument error indicating parentname requires backend to be configured

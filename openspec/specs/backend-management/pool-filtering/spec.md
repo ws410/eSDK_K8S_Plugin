@@ -74,3 +74,23 @@ The pool filtering system shall filter candidate storage pools through multiple 
 #### Scenario: Validate volume type for managed volume
 - **WHEN** a managed volume (volume import) request is processed
 - **THEN** the validateVolumeType function verifies that the volumeType from StorageClass matches the backend's pool storage type using filterByVolumeType; returns error "filterPools is empty" if mismatch
+
+#### Scenario: Filter pools by NFS protocol for DME A-Series
+- **WHEN** the CreateVolume request specifies nfsProtocol and the candidate pool is from a DME A-Series backend
+- **THEN** the filterByNFSProtocol function always passes the pool (DME A-Series pools bypass NFS protocol capability checks)
+
+#### Scenario: Filter pools with empty applicationType
+- **WHEN** the CreateVolume request does not specify applicationType in StorageClass parameters
+- **THEN** the filterByApplicationType function passes all pools regardless of SupportApplicationType capability
+
+#### Scenario: Filter pools by topology with empty SupportedTopologies
+- **WHEN** the CreateVolume request has AccessibilityRequirements but a backend has no SupportedTopologies configured
+- **THEN** the topology filter passes all pools for that backend (no topology constraint applied)
+
+#### Scenario: Filter pools by topology with empty Requisite list
+- **WHEN** the CreateVolume request has AccessibilityRequirements but the Requisite list is empty
+- **THEN** the FilterByTopology function passes all pools (no requisite constraint applied)
+
+#### Scenario: Validate authClient for managed volume
+- **WHEN** a managed volume (volume import) request is processed for an NFS protocol backend
+- **THEN** the ValidateBackend function verifies that the backend's authClient configuration matches the expected NFS client settings

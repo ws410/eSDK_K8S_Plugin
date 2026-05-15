@@ -26,3 +26,15 @@ The `oceanctl delete backend` command shall delete one or more StorageBackendCla
 #### Scenario: Reject delete-backend with invalid selector
 - **WHEN** the user runs `oceanctl delete backend` without specifying names or --all
 - **THEN** the CLI validator rejects the request (ValidateSelector)
+
+#### Scenario: Reject delete-backend with --all and names together
+- **WHEN** the user runs `oceanctl delete backend <name> --all`
+- **THEN** the CLI validator rejects the request with error "name cannot be provided when a selector is specified"
+
+#### Scenario: Delete backend patches ConfigMap finalizers
+- **WHEN** the CLI deletes a backend's ConfigMap
+- **THEN** the deleteSbcReferenceResources function first gets the ConfigMap, patches it to remove all finalizers (`{"metadata":{"finalizers":[]}}`), then deletes the ConfigMap, Secret, and SBC
+
+#### Scenario: Delete backend with CertSecret cleanup
+- **WHEN** the user deletes a backend that has CertSecret configured
+- **THEN** the deleteSbcReferenceResources function includes the CertSecret in the kubectl delete command along with ConfigMap, Secret, and SBC

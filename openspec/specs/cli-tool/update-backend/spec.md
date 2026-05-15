@@ -33,4 +33,12 @@ The `oceanctl update backend` command shall update a backend's Secret with new c
 
 #### Scenario: Update backend with rollback on failure
 - **WHEN** the SBC update fails after the new Secret is created
-- **THEN** the CLI restores the old SBC secretMeta and deletes the newly created Secret
+- **THEN** the CLI restores the old SBC secretMeta by re-applying the old claim YAML, and deletes the newly created Secret
+
+#### Scenario: Update backend preserves old authentication mode
+- **WHEN** the user runs `oceanctl update backend <name> --password` without --authenticationMode flag
+- **THEN** the createSecretWithUid function retrieves the old Secret to preserve the existing AuthenticationMode value in the new Secret
+
+#### Scenario: Update backend generates UUID suffix for new Secret name
+- **WHEN** the user runs `oceanctl update backend <name> --password`
+- **THEN** the CLI calls AppendUid(oldClaim.Name, 10) to generate a new Secret name with a 10-character UUID suffix appended to the original backend name

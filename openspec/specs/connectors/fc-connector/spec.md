@@ -22,3 +22,15 @@ The FC connector shall implement the VolumeConnector interface to connect/discon
 #### Scenario: Clear residual path by LUN ID
 - **WHEN** CleanDeviceByLunId is called with host LUN ID and target WWNs
 - **THEN** the connector removes stale device paths associated with the LUN ID to prevent conflicts with new connections
+
+#### Scenario: Connect FC volume with HBA rescan retry logic
+- **WHEN** the connector triggers FC HBA rescan to discover new LUNs
+- **THEN** the waitDeviceDiscovery function performs up to 3 scan attempts with 2-second intervals, waiting up to 60 seconds total for the device to appear; each attempt writes to sysfs issue_lip and scan files on all online FC HBAs
+
+#### Scenario: Connect FC volume with UltraPath device discovery wait
+- **WHEN** the connector connects an FC volume with HWUltraPath multipath
+- **THEN** the waitUltraPathDeviceDiscovery function polls the UltraPath device manager after the FC HBA rescan, waiting until UltraPath takes over the device before returning the virtual device path
+
+#### Scenario: Connect FC volume with /dev/disk/by-path discovery
+- **WHEN** the connector needs to discover the FC LUN device path
+- **THEN** the getPossibleVolumePath function constructs /dev/disk/by-path/ paths based on FC HBA port WWN, target WWN, and LUN number, and checks which path exists

@@ -54,3 +54,19 @@ The OceanStor plugin shall implement the StoragePlugin interface for oceanstor-s
 #### Scenario: Support QoS parameter validation
 - **WHEN** SupportQoSParameters is called with QoS configuration
 - **THEN** the plugin validates the QoS parameters against the storage array's supported QoS types (IOPS, bandwidth)
+
+#### Scenario: Attach volume with HyperMetro dual-site handling
+- **WHEN** AttachVolume is called for a HyperMetro-enabled volume
+- **THEN** the handler method checks storage online status: if both local and remote are online, uses metroHandler for dual-site attach; if only local is online, falls back to commonHandler with local client; if only remote is online, falls back to commonHandler with remote client; if both are offline, returns error
+
+#### Scenario: Expand NAS volume with logic port site assertion
+- **WHEN** ExpandVolume is called for an OceanStor NAS volume and metroRemotePlugin is nil
+- **THEN** the plugin calls assertLogicPortRunOnOwnSite to verify the NAS logic port is running on the local site before proceeding with expansion
+
+#### Scenario: Create DTree volume with parentname validation
+- **WHEN** CreateVolume is called for an OceanStor DTree volume
+- **THEN** the plugin validates the parentname against the backend's parentname configuration using getValidParentname: if both SC and backend parentname are set, they must match; if one is empty, the other is used; if both are empty, returns error
+
+#### Scenario: Detach DTree volume with NFS auto-auth client management
+- **WHEN** DetachVolume is called for a DTree volume with nfsAutoAuthClient enabled
+- **THEN** the plugin gets filtered IPs by CIDRs, calls dtree.AutoManageAuthClient with NoAccess to remove NFS client authorization, and if IOIsolation is true, calls dtree.CheckAllClientsStatus to verify all clients are disconnected

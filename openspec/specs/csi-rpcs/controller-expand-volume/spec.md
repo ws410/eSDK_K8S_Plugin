@@ -62,3 +62,19 @@ The ControllerExpandVolume RPC shall expand a volume's capacity on Huawei storag
 #### Scenario: Handle SelectBackend returning nil with error for expand
 - **WHEN** the CO sends a ControllerExpandVolumeRequest and SelectBackend returns (nil, error)
 - **THEN** the driver condition `backend == nil || err != nil` evaluates to true, and returns codes.Internal error "Backend <name> doesn't exist"
+
+#### Scenario: Reject expand with zero required bytes
+- **WHEN** the CO sends a ControllerExpandVolumeRequest with CapacityRange.RequiredBytes set to 0
+- **THEN** the driver passes validation (CapacityRange is not nil) but the backend plugin receives a size of 0 sectors; the backend may reject or accept this depending on implementation
+
+#### Scenario: Reject expand when requested size is smaller than current (shrink)
+- **WHEN** the CO sends a ControllerExpandVolumeRequest with RequiredBytes smaller than the current volume capacity
+- **THEN** the driver does NOT detect shrink at the CSI layer and delegates to the backend plugin; the backend's Expand method may reject the request with an error
+
+#### Scenario: Handle panic recovery during expand
+- **WHEN** the ControllerExpandVolume handler encounters a panic during execution
+- **THEN** the defer utils.RecoverPanic(ctx) recovers the panic, logs the stack trace, and returns an appropriate error response
+
+#### Scenario: Expand volume with default disableVerifyCapacity (skip verification)
+- **WHEN** the CO sends a ControllerExpandVolumeRequest and the volume attributes do not contain disableVerifyCapacity
+- **THEN** the verifySectorSize function defaults disableVerifyCapacity to "true", skips sector size verification, and allows the expansion to proceed without alignment checks

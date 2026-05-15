@@ -26,3 +26,11 @@ The NodeUnstageVolume RPC shall remove a staged volume from the node's staging t
 #### Scenario: Reject NodeUnstageVolume when unmount fails
 - **WHEN** the CO sends a NodeUnstageVolumeRequest and the unmount operation fails
 - **THEN** the driver returns codes.Internal error with the unmount failure reason
+
+#### Scenario: Unstage SAN volume with WWN retrieval from target path fallback
+- **WHEN** the CO sends a NodeUnstageVolumeRequest and the WWN file does not exist at the expected path
+- **THEN** the driver reads /proc/mounts to find the device associated with the staging target path, extracts the WWN from the device path, writes the WWN to disk for idempotent retry, and proceeds with unstage
+
+#### Scenario: Unstage SAN volume with raw block staging path detection
+- **WHEN** the CO sends a NodeUnstageVolumeRequest for a block volume
+- **THEN** the driver checks if the staging target path exists as a file (raw block bind mount) and unmounts it accordingly before disconnecting the volume

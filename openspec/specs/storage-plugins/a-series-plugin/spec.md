@@ -58,3 +58,27 @@ The A-Series plugin (OceanstorASeriesPlugin) shall implement the StoragePlugin i
 #### Scenario: Validate A-Series parameters
 - **WHEN** Validate is called
 - **THEN** the plugin verifies parameters, protocol, portals, creates a test client, performs ValidateLogin, and logs out
+
+#### Scenario: Create A-Series volume with advancedOptions JSON
+- **WHEN** CreateVolume is called with advancedOptions parameter set to a JSON string
+- **THEN** the genCreateVolumeModel function unmarshals the JSON into the volume creation model, allowing storage-specific options to be passed through
+
+#### Scenario: Create A-Series volume with KVCache enabled
+- **WHEN** CreateVolume is called with EnableKVCache parameter set
+- **THEN** the genCreateVolumeModel function passes EnableKVCache, EnableTimeAwareGC, and GCTimeThreshold to the volume creation model for A-Series KVCache support
+
+#### Scenario: Create A-Series volume with authUser for DTFS
+- **WHEN** CreateVolume is called for DTFS protocol
+- **THEN** the CreateASeriesVolumeParameter validation requires authUser to be non-empty; authUsers are split by ";" and passed to the volume creation model
+
+#### Scenario: Create A-Series DTree volume with parentname
+- **WHEN** CreateVolume is called for oceanstor-aseries-dtree
+- **THEN** the OceanstorASeriesDtreePlugin validates the optional parentname parameter, passes it to genCreateDTreeModel along with protocol, and creates the DTree on the A-Series storage
+
+#### Scenario: A-Series DTree capabilities override
+- **WHEN** UpdateBackendCapabilities is called for oceanstor-aseries-dtree
+- **THEN** the plugin calls the parent A-Series method and overrides: SupportApplicationType=false, SupportQoS=false, SupportThick=false, SupportQuota=true
+
+#### Scenario: A-Series DTree returns zero pool capacities
+- **WHEN** UpdatePoolCapabilities is called for oceanstor-aseries-dtree
+- **THEN** the plugin returns zero capacities via getZeroPoolsCapacities (all capacities set to 0 for each pool name)

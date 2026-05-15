@@ -34,3 +34,15 @@ The pool weighting system shall select the optimal storage pool from filtered ca
 #### Scenario: Build pool pairs for local and remote selection
 - **WHEN** hyperMetro or replication is enabled
 - **THEN** the SelectPoolPair function iterates through each local pool, selects a corresponding remote pool via SelectRemotePool, builds SelectPoolPair structs (Local + Remote), and passes them to WeightPools for final selection
+
+#### Scenario: Select remote pool returns nil when no match found
+- **WHEN** SelectRemotePool is called for a hyperMetro or replication volume but no remote pools pass the SecondaryFilterFuncs
+- **THEN** the function returns (nil, nil) -- not an error, allowing the local pool to be used without remote pairing
+
+#### Scenario: WeightPools with empty candidate list
+- **WHEN** WeightPools is called with an empty list of pool pairs
+- **THEN** the function returns an error indicating no pools are available for selection
+
+#### Scenario: SelectRemotePool with missing MetroBackend
+- **WHEN** SelectRemotePool is called with hyperMetro=true but the local backend's MetroBackend is nil
+- **THEN** the function returns an error indicating metro backend is not configured

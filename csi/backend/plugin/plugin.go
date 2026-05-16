@@ -25,6 +25,12 @@ import (
 	"github.com/Huawei/eSDK_K8S_Plugin/v4/utils"
 )
 
+// VolumeHealth represents the health status of a volume
+type VolumeHealth struct {
+	Healthy bool
+	Message string
+}
+
 // StoragePlugin defines storage plugin interfaces
 type StoragePlugin interface {
 	NewPlugin() StoragePlugin
@@ -58,6 +64,8 @@ type StoragePlugin interface {
 	GetOnline() bool
 	// GetSectorSize gets the sector size of plugin
 	GetSectorSize() int64
+	// QueryVolumeHealth queries the health status of a volume
+	QueryVolumeHealth(context.Context, string, map[string]interface{}) (*VolumeHealth, error)
 }
 
 // SmartXQoSQuery provides Quality of Service(QoS) Query operations

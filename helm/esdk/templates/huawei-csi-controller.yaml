@@ -421,6 +421,50 @@ subjects:
     namespace: {{ .Values.kubernetes.namespace }}
   {{ end }}
 
+  {{ if .Values.controller.volumeMonitor.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    provisioner: csi.huawei.com
+  name: huawei-csi-health-monitor-controller
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumes" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims/status" ]
+    verbs: [ "update", "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "storageclasses" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "coordination.k8s.io" ]
+    resources: [ "leases" ]
+    verbs: [ "get", "watch", "list", "delete", "update", "create" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    provisioner: csi.huawei.com
+  name: huawei-csi-health-monitor-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: huawei-csi-health-monitor-controller
+subjects:
+  - kind: ServiceAccount
+    name: huawei-csi-controller
+    namespace: {{ .Values.kubernetes.namespace }}
+  {{ end }}
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -797,6 +841,25 @@ spec:
           resources:
           {{- toYaml .Values.resources.controller.huaweiCsiDriver | nindent 12 }}
           {{ end }}
+        {{ if .Values.controller.volumeMonitor.enabled }}
+        - name: csi-external-health-monitor-controller
+          image: {{ .Values.images.sidecar.healthMonitorController }}
+          imagePullPolicy: {{ .Values.sidecarImagePullPolicy }}
+          args:
+            - "--csiAddress=$(CSI_ENDPOINT)"
+            - "--monitor-interval={{ .Values.controller.volumeMonitor.monitorInterval }}"
+            - "--timeout=15s"
+          env:
+            - name: CSI_ENDPOINT
+              value: {{ .Values.csiDriver.endpoint }}
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          {{ if ((.Values.resources).controller).healthMonitorController }}
+          resources:
+          {{- toYaml .Values.resources.controller.healthMonitorController | nindent 12 }}
+          {{ end }}
+        {{ end }}
       volumes:
         - emptyDir: null
           name: socket-dir

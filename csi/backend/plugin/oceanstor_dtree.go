@@ -363,3 +363,25 @@ func (p *OceanstorDTreePlugin) SetNfsAutoAuthClient(enabled bool, cidrs []string
 		CIDRs:   cidrs,
 	}
 }
+
+// QueryVolumeHealth queries the health status of a DTree volume
+func (p *OceanstorDTreePlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for DTree volume %s", name)
+
+	scParentName, _ := utils.GetValue[string](nil, "parentname")
+	parentName, err := getValidParentname(scParentName, p.parentName)
+	if err != nil {
+		parentName = p.parentName
+	}
+
+	dtree, err := p.cli.GetDTreeByName(ctx, "", parentName, p.vStoreId, name)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for DTree volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if dtree == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	return &VolumeHealth{Healthy: true, Message: ""}, nil
+}

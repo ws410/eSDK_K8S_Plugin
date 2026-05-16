@@ -248,3 +248,20 @@ func (p *FusionStorageDTreePlugin) SetParentName(parentName string) {
 func (p *FusionStorageDTreePlugin) GetDTreeParentName() string {
 	return p.parentname
 }
+
+// QueryVolumeHealth queries the health status of a FusionStorage DTree volume
+func (p *FusionStorageDTreePlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for FusionStorage DTree volume %s", name)
+
+	backendParentName := p.parentname
+	dtreeInfo, err := p.cli.GetDTreeByName(ctx, name, backendParentName)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for FusionStorage DTree volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if dtreeInfo == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	return &VolumeHealth{Healthy: true, Message: ""}, nil
+}

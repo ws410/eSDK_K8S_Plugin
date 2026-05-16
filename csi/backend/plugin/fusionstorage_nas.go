@@ -248,3 +248,19 @@ func (p *FusionStorageNasPlugin) verifyFusionStorageNasParam(ctx context.Context
 
 	return nil
 }
+
+// QueryVolumeHealth queries the health status of a FusionStorage NAS volume
+func (p *FusionStorageNasPlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for FusionStorage NAS volume %s", name)
+
+	fs, err := p.cli.GetFileSystemByName(ctx, name)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for FusionStorage NAS volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if fs == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	return &VolumeHealth{Healthy: true, Message: ""}, nil
+}

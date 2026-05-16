@@ -315,6 +315,13 @@ func (d *CsiDriver) ControllerGetCapabilities(ctx context.Context, req *csi.Cont
 					},
 				},
 			},
+			{
+				Type: &csi.ControllerServiceCapability_Rpc{
+					Rpc: &csi.ControllerServiceCapability_RPC{
+						Type: csi.ControllerServiceCapability_RPC_GET_VOLUME,
+					},
+				},
+			},
 		},
 	}, nil
 }
@@ -397,8 +404,51 @@ func (d *CsiDriver) ListSnapshots(ctx context.Context,
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-// ControllerGetVolume is to get volume info, but unimplemented
+// ControllerGetVolume is to get volume health status
 func (d *CsiDriver) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (
 	*csi.ControllerGetVolumeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "")
+	defer utils.RecoverPanic(ctx)
+
+	volumeId := req.GetVolumeId()
+	if volumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "volume ID is required")
+	}
+
+	log.AddContext(ctx).Infof("Start to get volume health for %s", volumeId)
+
+	backendName, _ := utils.SplitVolumeId(volumeId)
+	backend, err := d.backendSelector.SelectBackend(ctx, backendName)
+	if backend == nil || err != nil {
+		msg := fmt.Sprintf("Backend %s doesn't exist", backendName)
+		log.AddContext(ctx).Errorf("%s, error: %v", msg, err)
+		return nil, status.Error(codes.Internal, msg)
+	}
+
+	_, volName := utils.SplitVolumeId(volumeId)
+	var params map[string]interface{}
+	if constants.IsDtreeStorage(backend.Storage) {
+		parentName, err := app.GetGlobalConfig().K8sUtils.GetDTreeParentNameByVolumeId(volumeId)
+		if err != nil {
+			log.AddContext(ctx).Errorf("Failed to get DTree parent name for volume %s: %v", volumeId, err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		params = map[string]interface{}{"parentname": parentName}
+	}
+
+	health, err := backend.Plugin.QueryVolumeHealth(ctx, volName, params)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for %s: %v", volumeId, err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	log.AddContext(ctx).Infof("Volume %s health status: healthy=%v, message=%s", volumeId, health.Healthy, health.Message)
+
+	return &csi.ControllerGetVolumeResponse{
+		Volume: &csi.Volume{
+			VolumeId: volumeId,
+		},
+		VolumeCondition: &csi.VolumeCondition{
+			Abnormal: !health.Healthy,
+		},
+	}, nil
 }

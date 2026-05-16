@@ -15,6 +15,7 @@ images:
     livenessProbe: registry.k8s.io/sig-storage/livenessprobe:v2.15.0
     snapshotter: registry.k8s.io/sig-storage/csi-snapshotter:v8.2.0
     snapshotController: registry.k8s.io/sig-storage/snapshot-controller:v8.2.0
+    healthMonitorController: registry.k8s.io/sig-storage/csi-external-health-monitor-controller:v0.10.0
 
 # Default image pull policy for sidecar container images, support [IfNotPresent, Always, Never]
 sidecarImagePullPolicy: "IfNotPresent"
@@ -128,6 +129,20 @@ controller:
     # Port used by the CSI server when it is exported on service. The default port is 9090.
     # You can change the port to another port that is not occupied.
     port: 9090
+
+  volumeMonitor:
+    # enabled: Enable/Disable volume health monitoring feature
+    # When enabled, deploys csi-external-health-monitor-controller sidecar
+    # Allowed values:
+    #   true: enable volume health monitoring (installs health monitor sidecar)
+    #   false: disable volume health monitoring
+    # Default value: false
+    enabled: false
+    # Image for the external health monitor controller sidecar
+    image: registry.k8s.io/sig-storage/csi-external-health-monitor-controller:v0.10.0
+    # monitorInterval: Interval of monitoring volume health condition
+    # Default value: 60s
+    monitorInterval: 60s
 
   # nodeSelector: Define node selection constraints for controller pods.
   # For the pod to be eligible to run on a node, the node must have each

@@ -393,3 +393,19 @@ func (p *FusionStorageSanPlugin) verifyFusionStorageSanParam(config map[string]i
 
 	return nil
 }
+
+// QueryVolumeHealth queries the health status of a FusionStorage SAN volume
+func (p *FusionStorageSanPlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for FusionStorage SAN volume %s", name)
+
+	vol, err := p.cli.GetVolumeByName(ctx, name)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for FusionStorage SAN volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if vol == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	return &VolumeHealth{Healthy: true, Message: ""}, nil
+}

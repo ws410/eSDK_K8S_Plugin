@@ -806,3 +806,19 @@ func (p *OceanstorNasPlugin) SetNfsAutoAuthClient(enabled bool, cidrs []string) 
 		CIDRs:   cidrs,
 	}
 }
+
+// QueryVolumeHealth queries the health status of a NAS volume
+func (p *OceanstorNasPlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for NAS volume %s", name)
+
+	fs, err := p.cli.GetFileSystemByName(ctx, name)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for NAS volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if fs == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	return &VolumeHealth{Healthy: true, Message: ""}, nil
+}

@@ -732,3 +732,33 @@ func (p *OceanstorSanPlugin) ModifyVolume(ctx context.Context, volumeName string
 func (p *OceanstorSanPlugin) SetStorageOnline(online bool) {
 	p.storageOnline = online
 }
+
+const lunHealthStatusNormal = "1"
+
+// QueryVolumeHealth queries the health status of a SAN volume
+func (p *OceanstorSanPlugin) QueryVolumeHealth(ctx context.Context, name string, _ map[string]interface{}) (*VolumeHealth, error) {
+	log.AddContext(ctx).Infof("Start to query volume health for SAN volume %s", name)
+
+	lunName := p.cli.MakeLunName(name)
+	lun, err := p.cli.GetLunByName(ctx, lunName)
+	if err != nil {
+		log.AddContext(ctx).Errorf("Query volume health failed for SAN volume %s: %v", name, err)
+		return nil, fmt.Errorf("query volume health failed: %w", err)
+	}
+	if lun == nil {
+		return &VolumeHealth{Healthy: false, Message: "volume not found"}, nil
+	}
+
+	healthStatus, ok := lun["HEALTHSTATUS"].(string)
+	if !ok {
+		log.AddContext(ctx).Warningf("Get HEALTHSTATUS failed for SAN volume %s", name)
+		return &VolumeHealth{Healthy: false, Message: "health status unavailable"}, nil
+	}
+
+	if healthStatus == lunHealthStatusNormal {
+		return &VolumeHealth{Healthy: true, Message: ""}, nil
+	}
+
+	log.AddContext(ctx).Infof("SAN volume %s health status is abnormal: %s", name, healthStatus)
+	return &VolumeHealth{Healthy: false, Message: fmt.Sprintf("HEALTHSTATUS=%s", healthStatus)}, nil
+}

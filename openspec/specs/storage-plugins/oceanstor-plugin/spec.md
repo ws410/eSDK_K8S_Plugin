@@ -63,10 +63,8 @@ The OceanStor plugin shall implement the StoragePlugin interface for oceanstor-s
 - **WHEN** ExpandVolume is called for an OceanStor NAS volume and metroRemotePlugin is nil
 - **THEN** the plugin calls assertLogicPortRunOnOwnSite to verify the NAS logic port is running on the local site before proceeding with expansion
 
-#### Scenario: Create DTree volume with parentname validation
+#### Scenario: DTree volume operations
 - **WHEN** CreateVolume is called for an OceanStor DTree volume
 - **THEN** the plugin validates the parentname against the backend's parentname configuration using getValidParentname: if both SC and backend parentname are set, they must match; if one is empty, the other is used; if both are empty, returns error
-
-#### Scenario: Detach DTree volume with NFS auto-auth client management
 - **WHEN** DetachVolume is called for a DTree volume with nfsAutoAuthClient enabled
 - **THEN** the plugin gets filtered IPs by CIDRs, calls dtree.AutoManageAuthClient with NoAccess to remove NFS client authorization, and if IOIsolation is true, calls dtree.CheckAllClientsStatus to verify all clients are disconnected

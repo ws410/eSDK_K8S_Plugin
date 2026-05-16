@@ -44,6 +44,7 @@ The pool filtering system shall filter candidate storage pools through multiple 
 #### Scenario: Filter pools by topology
 - **WHEN** the CreateVolume request has AccessibilityRequirements with Requisite topologies
 - **THEN** the FilterByTopology function selects only pools whose backend's SupportedTopologies match at least one requisite topology, including protocol topology combinations
+- **Note**: When backend has no SupportedTopologies configured or Requisite list is empty, the filter passes all pools (see topology-matching spec for details)
 
 #### Scenario: Filter pools by capacity
 - **WHEN** the CreateVolume request specifies allocType=thick
@@ -82,14 +83,6 @@ The pool filtering system shall filter candidate storage pools through multiple 
 #### Scenario: Filter pools with empty applicationType
 - **WHEN** the CreateVolume request does not specify applicationType in StorageClass parameters
 - **THEN** the filterByApplicationType function passes all pools regardless of SupportApplicationType capability
-
-#### Scenario: Filter pools by topology with empty SupportedTopologies
-- **WHEN** the CreateVolume request has AccessibilityRequirements but a backend has no SupportedTopologies configured
-- **THEN** the topology filter passes all pools for that backend (no topology constraint applied)
-
-#### Scenario: Filter pools by topology with empty Requisite list
-- **WHEN** the CreateVolume request has AccessibilityRequirements but the Requisite list is empty
-- **THEN** the FilterByTopology function passes all pools (no requisite constraint applied)
 
 #### Scenario: Validate authClient for managed volume
 - **WHEN** a managed volume (volume import) request is processed for an NFS protocol backend

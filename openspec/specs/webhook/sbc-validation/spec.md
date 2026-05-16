@@ -31,18 +31,6 @@ The admission webhook shall validate StorageBackendClaim resources to ensure the
 - **WHEN** a user creates an SBC with all required fields and valid formats
 - **THEN** the webhook performs full backend validation: retrieves ConfigMap and Secret, constructs the Backend object, validates storage type and plugin existence, validates parameters, and calls Plugin.Validate() which performs a login test to the storage array; if all pass, the request is allowed
 
-#### Scenario: Validate SBC MaxClientThreads range (NOT IMPLEMENTED)
-- **WHEN** a user creates or updates an SBC with MaxClientThreads outside the valid range
-- **THEN** the webhook does NOT validate MaxClientThreads range; this validation is NOT implemented in the current codebase
-
-#### Scenario: Validate SBC Parameters format (NOT IMPLEMENTED)
-- **WHEN** a user creates an SBC with Parameters that contain invalid key-value format
-- **THEN** the webhook does NOT validate Parameters format; this validation is NOT implemented in the current codebase
-
-#### Scenario: Validate SBC UseCert and CertSecret consistency (NOT IMPLEMENTED)
-- **WHEN** a user creates an SBC with UseCert=true but CertSecret is empty
-- **THEN** the webhook does NOT validate UseCert/CertSecret consistency; this validation is NOT implemented in the current codebase
-
 #### Scenario: Validate SBC delete with finalizers
 - **WHEN** a user deletes an SBC that has finalizers other than ClaimBoundFinalizer
 - **THEN** the validateDelete function rejects the request with error "forbid delete StorageBackendClaim %s, there are some finalizers [%v]"; only the ClaimBoundFinalizer ("storagebackend.xuanwu.huawei.io/storagebackendclaim-bound-protection") is permitted

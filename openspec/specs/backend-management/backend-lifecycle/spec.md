@@ -59,18 +59,6 @@ The backend management system shall provide lifecycle operations for storage bac
 - **WHEN** UpdateOrRegisterOnlineBackend processes a list of SBCTs
 - **THEN** it skips any SBCT with Status.Online=false or nil Status, and only registers/updates backends that are online
 
-#### Scenario: UpdateOrRegisterOnlineBackend returns only last error
-- **WHEN** UpdateOrRegisterOnlineBackend processes multiple SBCTs and some fail while others succeed
-- **THEN** the function logs each error but continues processing; only the last encountered error is returned (intermediate errors are not accumulated)
-
-#### Scenario: FetchAndRegisterAllBackend silently swallows fetch errors
-- **WHEN** FetchAndRegisterAllBackend calls FetchAllBackends and the Kubernetes API call fails
-- **THEN** the function logs a warning and returns without error (does NOT propagate the fetch error), skipping the consistency check
-
-#### Scenario: FetchAndRegisterAllBackend skips consistency check on register failure
-- **WHEN** FetchAndRegisterAllBackend calls UpdateOrRegisterOnlineBackend and it returns an error
-- **THEN** the function returns immediately without calling CheckConsistency, leaving stale backends in cache
-
 #### Scenario: Update backend with ReLogin
 - **WHEN** UpdateStorageBackend is called via the DR-CSI provider
 - **THEN** the function calls FetchAndRegisterOneBackend with checkOnline=false to re-fetch the backend, then calls bk.Plugin.ReLogin(ctx) to refresh the storage array session, and sets the SBCT online status to true
@@ -82,15 +70,3 @@ The backend management system shall provide lifecycle operations for storage bac
 #### Scenario: Subscribe to backend status changes
 - **WHEN** RunSyncBackendTaskInBackground starts
 - **THEN** it subscribes to backend status changes via pkgUtils.Subscribe(pkgUtils.BackendStatus, ...), and calls FetchAndRegisterAllBackend once at startup to initialize the cache
-
-#### Scenario: RemoveOneBackend standalone function
-- **WHEN** RemoveOneBackend is called with a backend name
-- **THEN** the function removes the backend from the cache via cacheHandler.Delete, which triggers Plugin.Logout to release storage client connections
-
-#### Scenario: FilterStoragePool alternative pool filtering
-- **WHEN** FilterStoragePool is called directly (not via BackendSelector)
-- **THEN** the function filters pools by the given criteria as an alternative entry point for pool selection, separate from the BackendSelector.SelectPoolPair flow
-
-#### Scenario: BuildBackend with invalid tuple
-- **WHEN** BuildBackend is called with a StorageBackendContent that has missing BackendClaim, ConfigmapMeta, or SecretMeta
-- **THEN** the function returns an error "valid tuple failed"

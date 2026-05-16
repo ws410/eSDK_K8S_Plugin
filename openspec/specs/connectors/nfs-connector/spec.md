@@ -27,10 +27,6 @@ The NFS connector shall implement the VolumeConnector interface to mount/unmount
 - **WHEN** the mountFlags include "ro"
 - **THEN** the connector mounts the NFS share as read-only
 
-#### Scenario: Handle disk in formatting
-- **WHEN** the connector detects the disk is currently being formatted by another process
-- **THEN** it waits 10 seconds and returns error "the disk is in formatting, please wait"
-
 #### Scenario: Reject unsupported source type
 - **WHEN** the connector receives a ConnectVolume request with srcType other than "block" or "fs"
 - **THEN** the connector returns error "not support source type"
@@ -43,14 +39,14 @@ The NFS connector shall implement the VolumeConnector interface to mount/unmount
 - **WHEN** the connector receives a ConnectVolume request without targetPath
 - **THEN** the connector returns error "there are no target path in the connection info"
 
-#### Scenario: Mount NFS share with DPC/DTFS protocol mount option
-- **WHEN** the connector receives a ConnectVolume request with protocol=dpc or protocol=dtfs
-- **THEN** the parseNFSInfo function sets mntDashT to the protocol type, which is passed to the mount command as the -t option
+#### Scenario: Mount block device with formatting details
+- **WHEN** the connector mounts a block device (srcType=block)
+- **THEN** it performs the following:
+  - Reads the device and checks if it has a filesystem using blkid; if unformatted, checks if another process is formatting it (waits 10 seconds and returns error if so)
+  - Determines disk size type (default/big/huge/large/veryLarge based on size thresholds: 0.5TiB/1TiB/10TiB/100TiB/512TiB); returns error if size exceeds 512TiB
+  - Formats the disk with the appropriate mkfs options and mounts it
+  - If fsType=xfs and source is a /dev/* device, automatically adds "nouuid" to mount options to allow cloned volumes with same UUID to be mounted
 
-#### Scenario: Mount block device with XFS nouuid option
-- **WHEN** the connector mounts a block device with fsType=xfs and the source is a /dev/* device
-- **THEN** the mountDisk function automatically adds "nouuid" to the mount options to allow cloned volumes with the same UUID to be mounted
-
-#### Scenario: Reject mount when disk size exceeds 512TiB
-- **WHEN** the connector receives a ConnectVolume request with srcType=block and the device size is greater than 512TiB
-- **THEN** the getDiskSizeType function returns an error "the disk size does not support"
+#### Scenario: Mount NFS share with protocol-specific options
+- **WHEN** the connector mounts an NFS share (srcType=fs)
+- **THEN** it parses connection info (defaulting fsType to ext4 if not set), determines mount type based on protocol (dpc for DPC, dtfs for DTFS), and passes it as the -t option to the mount command

@@ -15,22 +15,11 @@ The FC connector shall implement the VolumeConnector interface to connect/discon
 - **WHEN** the node has no FC HBAs installed
 - **THEN** the connector returns an error indicating no FC initiator exists
 
-#### Scenario: Rescan FC HBA
-- **WHEN** the connector needs to discover new FC LUNs
-- **THEN** it triggers a rescan on all available FC HBAs by writing to the sysfs issue_lip and scan files
-
-#### Scenario: Clear residual path by LUN ID
-- **WHEN** CleanDeviceByLunId is called with host LUN ID and target WWNs
-- **THEN** the connector removes stale device paths associated with the LUN ID to prevent conflicts with new connections
-
-#### Scenario: Connect FC volume with HBA rescan retry logic
-- **WHEN** the connector triggers FC HBA rescan to discover new LUNs
-- **THEN** the waitDeviceDiscovery function performs up to 3 scan attempts with 2-second intervals, waiting up to 60 seconds total for the device to appear; each attempt writes to sysfs issue_lip and scan files on all online FC HBAs
-
-#### Scenario: Connect FC volume with UltraPath device discovery wait
-- **WHEN** the connector connects an FC volume with HWUltraPath multipath
-- **THEN** the waitUltraPathDeviceDiscovery function polls the UltraPath device manager after the FC HBA rescan, waiting until UltraPath takes over the device before returning the virtual device path
-
-#### Scenario: Connect FC volume with /dev/disk/by-path discovery
-- **WHEN** the connector needs to discover the FC LUN device path
-- **THEN** the getPossibleVolumePath function constructs /dev/disk/by-path/ paths based on FC HBA port WWN, target WWN, and LUN number, and checks which path exists
+#### Scenario: Connect FC volume with discovery and multipath details
+- **WHEN** the connector connects an FC volume
+- **THEN** it performs the following:
+  - Triggers FC HBA rescan by writing to sysfs issue_lip and scan files on all online FC HBAs
+  - Performs up to 3 scan attempts with 2-second intervals, waiting up to 60 seconds total for device discovery
+  - Discovers the FC LUN device path via /dev/disk/by-path/ constructed from FC HBA port WWN, target WWN, and LUN number
+  - If HWUltraPath multipath is enabled, polls the UltraPath device manager until it takes over the device before returning the virtual device path
+  - Calls CleanDeviceByLunId to remove stale device paths associated with the LUN ID before establishing new connections

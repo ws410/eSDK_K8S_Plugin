@@ -23,34 +23,12 @@ The iSCSI connector shall implement the VolumeConnector interface to connect/dis
 - **WHEN** the iSCSI target requires CHAP authentication
 - **THEN** the connector configures CHAP credentials before logging in
 
-#### Scenario: Clear residual path by WWN
-- **WHEN** clearResidualPath is called with a device WWN
-- **THEN** the connector checks for stale device paths associated with the WWN and removes them before establishing a new connection
-
-#### Scenario: Resize block device
-- **WHEN** ResizeBlock is called with device WWN and new size
-- **THEN** the connector rescans the SCSI device to pick up the new size and verifies the block device reflects the updated capacity
-
-#### Scenario: Resize filesystem
-- **WHEN** ResizeMountPath is called with a mount point path
-- **THEN** the connector runs filesystem resize (e.g., resize2fs for ext*, xfs_growfs for xfs) to expand the filesystem to fill the resized block device
-
-#### Scenario: Connect iSCSI volume with portal ping filtering
-- **WHEN** the connector receives a ConnectVolume request with multiple iSCSI portals
-- **THEN** the constructISCSIInfo function pings each portal to test host connectivity, filters out unreachable portals, and only attempts login to available portals
-
-#### Scenario: Connect iSCSI volume with concurrent goroutine connections
-- **WHEN** the connector connects to multiple iSCSI portals
-- **THEN** for each portal, a goroutine is spawned to perform discovery, login, and device scan concurrently; each goroutine has panic recovery and updates shared data atomically
-
-#### Scenario: Connect iSCSI volume with device scan exponential backoff
-- **WHEN** the connector scans for iSCSI devices after login
-- **THEN** the deviceScan.scan function uses exponential backoff: echoes "scan" to /sys/class/scsi_host/hostX/scan, waits with increasing intervals, and retries until the device is discovered or timeout
-
-#### Scenario: Connect iSCSI volume with manual scan mode
-- **WHEN** the connector logs in to an iSCSI target
-- **THEN** iscsiadm is configured with manual scan mode to prevent automatic device scanning, giving the connector control over when to scan for new devices
-
-#### Scenario: Connect iSCSI volume with UltraPath device discovery
-- **WHEN** the connector connects an iSCSI volume with HWUltraPath multipath
-- **THEN** the findDiskOfUltraPath function polls the UltraPath device manager to discover the virtual device path, waiting until the device is taken over by UltraPath
+#### Scenario: Connect iSCSI volume with connection details
+- **WHEN** the connector connects an iSCSI volume
+- **THEN** it performs the following:
+  - Pings each iSCSI portal to test host connectivity, filters out unreachable portals, and only attempts login to available portals
+  - Spawns a goroutine per portal for concurrent discovery, login, and device scan; each goroutine has panic recovery and updates shared data atomically
+  - Configures iscsiadm with manual scan mode to prevent automatic device scanning
+  - Uses exponential backoff when scanning: echoes "scan" to /sys/class/scsi_host/hostX/scan, waits with increasing intervals, and retries until device is discovered or timeout
+  - If HWUltraPath multipath is enabled, polls the UltraPath device manager to discover the virtual device path
+  - Calls clearResidualPath to remove stale device paths associated with the WWN before establishing new connections

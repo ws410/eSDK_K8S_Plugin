@@ -1,16 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: tier-modify shall modify volume SmartTier settings
-The volume-modify-controller shall support SmartTier (automated data tiering) modification for volumes through the DR-CSI ModifyVolume service.
+### Requirement: tier-modify (SmartTier) is NOT IMPLEMENTED
+The volume-modify-controller spec mentions SmartTier (automated data tiering) modification, but this feature is NOT implemented in the current codebase. The ModifyVolumeType enum only has Local2HyperMetro and HyperMetro2Local values. No SmartTier handler exists in the DR-CSI provider or storage plugins.
 
-#### Scenario: Modify volume SmartTier policy
-- **WHEN** a VMC is created with Parameters containing SmartTier settings (tiering policy, migration schedule)
-- **THEN** the controller calls DR-CSI ModifyVolume with ModifyVolumeType=SmartTier and the tiering parameters, and the storage plugin applies the SmartTier policy to the volume
-
-#### Scenario: Reject SmartTier modify for unsupported volume
-- **WHEN** the target volume's storage type doesn't support SmartTier (e.g., OceanDisk, DME A-Series, A-Series NAS)
-- **THEN** the DR-CSI ModifyVolume call fails with "does not support volume modify feature" and the Content is marked as "Failed"
-
-#### Scenario: SmartTier modify on OceanStor SAN
-- **WHEN** a VMC targets a volume on oceanstor-san with SmartTier license
-- **THEN** the OceanStor plugin's ModifyVolume method applies the SmartTier policy via the storage array API
+This spec file documents a planned but unimplemented feature. Do not rely on these scenarios for current behavior.

@@ -1,16 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: migration-modify shall modify volume SmartMigration settings
-The volume-modify-controller shall support SmartMigration (online volume migration) modification for volumes through the DR-CSI ModifyVolume service.
+### Requirement: migration-modify (SmartMigration) is NOT IMPLEMENTED
+The volume-modify-controller spec mentions SmartMigration (online volume migration) modification, but this feature is NOT implemented in the current codebase. The ModifyVolumeType enum only has Local2HyperMetro and HyperMetro2Local values. No SmartMigration handler exists in the DR-CSI provider or storage plugins.
 
-#### Scenario: Modify volume SmartMigration
-- **WHEN** a VMC is created with Parameters containing SmartMigration settings (target pool, migration speed)
-- **THEN** the controller calls DR-CSI ModifyVolume with ModifyVolumeType=SmartMigration and the migration parameters, and the storage plugin initiates the online volume migration
-
-#### Scenario: Reject SmartMigration for unsupported volume
-- **WHEN** the target volume's storage type doesn't support SmartMigration (e.g., OceanDisk, DME A-Series, A-Series NAS, DTree)
-- **THEN** the DR-CSI ModifyVolume call fails with "does not support volume modify feature" or "not implement" and the Content is marked as "Failed"
-
-#### Scenario: SmartMigration on OceanStor SAN
-- **WHEN** a VMC targets a volume on oceanstor-san with SmartMigration license
-- **THEN** the OceanStor plugin's ModifyVolume method initiates the online volume migration to the target pool via the storage array API
+This spec file documents a planned but unimplemented feature. Do not rely on these scenarios for current behavior.

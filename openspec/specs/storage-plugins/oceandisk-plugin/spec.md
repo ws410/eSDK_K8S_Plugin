@@ -31,17 +31,9 @@ The OceanDisk plugin shall implement the StoragePlugin interface for oceandisk-s
 - **WHEN** ExpandVolume is called
 - **THEN** the plugin expands the namespace to the new size and returns whether node expansion is required
 
-#### Scenario: Reject snapshot operations on OceanDisk
-- **WHEN** CreateSnapshot or DeleteSnapshot is called on oceandisk-san
-- **THEN** the plugin returns error "oceandisk does not support snapshot feature"
-
-#### Scenario: Reject DTree operations on OceanDisk
-- **WHEN** DeleteDTreeVolume or ExpandDTreeVolume is called on oceandisk-san
-- **THEN** the plugin returns error "oceandisk does not support dtree feature"
-
-#### Scenario: Reject ModifyVolume operations on OceanDisk
-- **WHEN** ModifyVolume is called on oceandisk-san
-- **THEN** the plugin returns error "oceandisk does not support volume modify feature"
+#### Scenario: Reject unsupported operations on OceanDisk
+- **WHEN** CreateSnapshot, DeleteSnapshot, DeleteDTreeVolume, ExpandDTreeVolume, or ModifyVolume is called on oceandisk-san
+- **THEN** the plugin returns an error indicating the storage type does not support the requested feature
 
 #### Scenario: Validate OceanDisk SAN parameters
 - **WHEN** Validate is called with backend configuration

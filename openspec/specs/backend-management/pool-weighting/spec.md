@@ -38,11 +38,3 @@ The pool weighting system shall select the optimal storage pool from filtered ca
 #### Scenario: Select remote pool returns nil when no match found
 - **WHEN** SelectRemotePool is called for a hyperMetro or replication volume but no remote pools pass the SecondaryFilterFuncs
 - **THEN** the function returns (nil, nil) -- not an error, allowing the local pool to be used without remote pairing
-
-#### Scenario: WeightPools with empty candidate list
-- **WHEN** WeightPools is called with an empty list of pool pairs
-- **THEN** the function returns an error indicating no pools are available for selection
-
-#### Scenario: SelectRemotePool with missing MetroBackend
-- **WHEN** SelectRemotePool is called with hyperMetro=true but the local backend's MetroBackend is nil
-- **THEN** the function returns an error indicating metro backend is not configured

@@ -19,17 +19,12 @@ The FC-NVMe connector shall implement the VolumeConnector interface to connect/d
 - **WHEN** multiple goroutines call ConnectVolume or DisConnectVolume simultaneously
 - **THEN** the connector's mutex ensures serialized access to FC-NVMe operations
 
-#### Scenario: Connect FC-NVMe volume with channel matching by WWN
-- **WHEN** the connector discovers FC-NVMe channels
-- **THEN** the getAllChannel function runs `nvme list-subsys -o json`, filters for paths with Transport="fc" and State="live", and matches channels by checking if both initiator and target WWN pairs appear in the address string
-
-#### Scenario: Connect FC-NVMe volume with device rescan
-- **WHEN** the connector has identified FC-NVMe channels
-- **THEN** the scanDevice function runs `nvme ns-rescan /dev/<channel>` for each channel to discover new namespaces
-
-#### Scenario: Connect FC-NVMe volume with virtual device polling
-- **WHEN** the connector needs to discover the FC-NVMe virtual device with multipath
-- **THEN** the getVirtualDeviceUseMultipath function polls up to 5 times with 1-second intervals for GetDevNameByLunWWN with UltraPath-NVMe, checking for residual paths via IsUpNVMeResidualPath before returning
+#### Scenario: Connect FC-NVMe volume with discovery details
+- **WHEN** the connector connects an FC-NVMe volume
+- **THEN** it performs the following:
+  - Runs `nvme list-subsys -o json` to discover FC-NVMe channels, filtering for Transport="fc" and State="live", matching by initiator and target WWN pairs
+  - Runs `nvme ns-rescan /dev/<channel>` for each channel to discover new namespaces
+  - Polls up to 5 times with 1-second intervals for UltraPath-NVMe device discovery, checking for residual paths via IsUpNVMeResidualPath before returning
 
 #### Scenario: Disconnect FC-NVMe volume without session cleanup
 - **WHEN** the connector disconnects an FC-NVMe volume

@@ -31,17 +31,9 @@ The DME plugin (DMEASeriesPlugin) shall implement the StoragePlugin interface fo
 - **WHEN** UpdateBackendCapabilities is called
 - **THEN** the plugin returns fixed capabilities: SupportThin=true, all others (SupportApplicationType, SupportQoS, SupportThick, SupportMetro, SupportReplication, SupportClone, SupportMetroNAS, SupportConsistentSnapshot) = false
 
-#### Scenario: Reject snapshot operations on DME A-Series
-- **WHEN** CreateSnapshot or DeleteSnapshot is called
-- **THEN** the plugin returns error "oceanstor-a-series-nas-dme storage does not support snapshot feature"
-
-#### Scenario: Reject DTree operations on DME A-Series
-- **WHEN** DeleteDTreeVolume or ExpandDTreeVolume is called
-- **THEN** the plugin returns error "oceanstor-a-series-nas-dme storage does not support DTree feature"
-
-#### Scenario: Reject ModifyVolume on DME A-Series
-- **WHEN** ModifyVolume is called
-- **THEN** the plugin returns error "oceanstor-a-series-nas-dme storage does not support volume modify feature"
+#### Scenario: Reject unsupported operations on DME A-Series
+- **WHEN** CreateSnapshot, DeleteSnapshot, DeleteDTreeVolume, ExpandDTreeVolume, or ModifyVolume is called
+- **THEN** the plugin returns an error indicating the storage type does not support the requested feature
 
 #### Scenario: SupportQoSParameters always passes for DME
 - **WHEN** SupportQoSParameters is called

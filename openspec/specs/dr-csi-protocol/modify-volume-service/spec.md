@@ -27,38 +27,6 @@ The DR-CSI ModifyVolume gRPC service provides volume modification operations. Cu
 - **WHEN** ModifyVolume is called with MutableParameters that do NOT contain the "hyperMetro" key
 - **THEN** the modifyHyperMetro function returns (empty response, nil) immediately without performing any modification
 
-#### Scenario: Reject ModifyVolume on OceanDisk (NOT IMPLEMENTED)
-- **WHEN** ModifyVolume is called on an oceandisk-san backend
-- **THEN** the plugin returns error "oceandisk does not support volume modify feature"
-
-#### Scenario: Reject ModifyVolume on A-Series (NOT IMPLEMENTED)
-- **WHEN** ModifyVolume is called on an oceanstor-a-series-nas backend
-- **THEN** the plugin returns error "oceanstor-a-series-nas storage does not support volume modify feature"
-
-#### Scenario: Reject ModifyVolume on DME A-Series (NOT IMPLEMENTED)
-- **WHEN** ModifyVolume is called on an oceanstor-a-series-nas-dme backend
-- **THEN** the plugin returns error "oceanstor-a-series-nas-dme storage does not support volume modify feature"
-
-#### Scenario: Reject ModifyVolume on DTree (NOT IMPLEMENTED)
-- **WHEN** ModifyVolume is called on an oceanstor-dtree backend
-- **THEN** the plugin returns error "not implement"
-
-#### Scenario: QoS modification is NOT implemented
-- **WHEN** the volume-modify-controller calls ModifyVolume with ModifyVolumeType=QoS
-- **THEN** the service does NOT have a QoS modification handler; only hyperMetro modification is implemented
-
-#### Scenario: SmartTier modification is NOT implemented
-- **WHEN** the volume-modify-controller calls ModifyVolume with ModifyVolumeType=SmartTier
-- **THEN** the service does NOT have a SmartTier modification handler; only hyperMetro modification is implemented
-
-#### Scenario: SmartMigration modification is NOT implemented
-- **WHEN** the volume-modify-controller calls ModifyVolume with ModifyVolumeType=SmartMigration
-- **THEN** the service does NOT have a SmartMigration modification handler; only hyperMetro modification is implemented
-
-#### Scenario: ModifyVolume with empty VolumeId
-- **WHEN** ModifyVolume is called with an empty VolumeId
-- **THEN** the service does NOT validate VolumeId before calling SplitVolumeId; the split returns empty strings which may cause downstream plugin failures
-
-#### Scenario: Orphaned proto messages
-- **WHEN** the DR-CSI proto file is reviewed
-- **THEN** Upload, Download, Delete, and ObjectExists messages are defined but no service uses them; these are orphaned declarations
+#### Scenario: Reject ModifyVolume on unsupported storage types
+- **WHEN** ModifyVolume is called on oceandisk-san, oceanstor-a-series-nas, oceanstor-a-series-nas-dme, or oceanstor-dtree backends
+- **THEN** the plugin returns an error indicating the storage type does not support volume modify feature

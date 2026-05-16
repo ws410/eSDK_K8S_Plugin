@@ -31,21 +31,9 @@ The DTree plugin (OceanstorDTreePlugin) shall implement the StoragePlugin interf
 - **WHEN** DetachVolume is called for a DTree volume
 - **THEN** if nfsAutoAuthClient is enabled, the plugin filters node IPs by CIDRs, calls AutoManageAuthClient with NoAccess, and if IOIsolation is true, checks all clients status before returning
 
-#### Scenario: Reject standard DeleteVolume on DTree
-- **WHEN** DeleteVolume (non-DTree variant) is called
-- **THEN** the plugin returns error "not implement" (use DeleteDTreeVolume instead)
-
-#### Scenario: Reject standard ExpandVolume on DTree
-- **WHEN** ExpandVolume (non-DTree variant) is called
-- **THEN** the plugin returns error "not implement" (use ExpandDTreeVolume instead)
-
-#### Scenario: Reject snapshot operations on DTree
-- **WHEN** CreateSnapshot is called
-- **THEN** the plugin returns error "oceanstor-dtree not support snapshot feature"
-
-#### Scenario: Reject DeleteSnapshot on DTree
-- **WHEN** DeleteSnapshot is called
-- **THEN** the plugin returns error "not implement"
+#### Scenario: Reject unsupported operations on DTree
+- **WHEN** DeleteVolume (non-DTree variant), ExpandVolume (non-DTree variant), CreateSnapshot, DeleteSnapshot, or ModifyVolume is called
+- **THEN** the plugin returns an error indicating the operation is not implemented (use the DTree-specific variants instead)
 
 #### Scenario: DTree disables advanced capabilities
 - **WHEN** UpdateBackendCapabilities is called
@@ -55,26 +43,14 @@ The DTree plugin (OceanstorDTreePlugin) shall implement the StoragePlugin interf
 - **WHEN** UpdatePoolCapabilities is called
 - **THEN** the plugin returns zero capacities for all pool names (DTree uses quota-based capacity, not pool-based)
 
-#### Scenario: Reject ModifyVolume on DTree
-- **WHEN** ModifyVolume is called
-- **THEN** the plugin returns error "not implement"
-
 #### Scenario: Validate DTree parameters
 - **WHEN** Validate is called
 - **THEN** the plugin verifies config parameters, validates DTree-specific params (protocol, portals, parentname), creates a test client, performs ValidateLogin, and logs out
 
-#### Scenario: Create DTree volume with Dorado V6/V7 volume name template
-- **WHEN** CreateVolume is called for a DTree volume on Dorado V6/V7 storage
-- **THEN** the plugin calls getVolumeNameFromPVNameOrParameters to resolve the volume name from the PV name template (validating it contains {{.PVCNamespace}} and {{.PVCName}}, executing with metadata and appending "-{{.PVCUid}}")
+#### Scenario: Create DTree volume with parentname and Dorado V6/V7 name template
+- **WHEN** CreateVolume is called for a DTree volume
+- **THEN** the plugin resolves the volume name from the PV name template (validating it contains {{.PVCNamespace}} and {{.PVCName}}, executing with metadata and appending "-{{.PVCUid}}"); validates parentname: if both StorageClass and backend parentname are set to different values, returns an error
 
-#### Scenario: Create DTree volume with parentname mismatch rejection
-- **WHEN** CreateVolume is called with both StorageClass parentname and backend parentname set to different values
-- **THEN** the getValidParentname function returns an error indicating the parentname values do not match
-
-#### Scenario: Attach DTree volume with parentName resolution priority
+#### Scenario: Attach DTree volume with parentName resolution
 - **WHEN** AttachVolume is called for a DTree volume
-- **THEN** the attachDTreeVolume function first checks volumeContext[DTreeParentKey]; if found, returns it; otherwise returns empty map; the plugin then falls back to p.parentName if the result is empty
-
-#### Scenario: Reject Attach DTree volume when parentName is missing
-- **WHEN** AttachVolume is called for a DTree volume with nfsAutoAuthClient enabled and parentName cannot be determined (not in volumeContext and not in plugin config)
-- **THEN** the plugin returns error "failed to get parent name"
+- **THEN** the attachDTreeVolume function first checks volumeContext[DTreeParentKey]; if found, returns it; otherwise falls back to p.parentName; if nfsAutoAuthClient is enabled and parentName cannot be determined, returns error "failed to get parent name"

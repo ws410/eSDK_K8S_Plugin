@@ -35,34 +35,13 @@ The `oceanctl collect logs` command shall collect pod logs from one or all nodes
 - **WHEN** the CLI encounters symbolic links during log file collection
 - **THEN** the CLI skips the symbolic links during compression
 
-#### Scenario: Group pods by node for log collection
-- **WHEN** the CLI collects logs from all nodes
-- **THEN** it queries all pods in the namespace, groups them by node name, and creates a separate log directory for each node
-
-#### Scenario: Collect logs concurrently with thread limit
-- **WHEN** the CLI collects logs from multiple nodes
-- **THEN** it limits concurrent node log collection to maxNodeThreads (default based on configuration) goroutines to prevent overwhelming the API server
-
-#### Scenario: Collect logs identifies pod types
+#### Scenario: Collect logs handles edge cases
 - **WHEN** the CLI collects logs from pods on a node
-- **THEN** the NodeLogCollector identifies each pod's type: CSI (huawei-csi pods), CSM (CSI sidecar), Xuanwu (storage-backend-controller/sidecar), or Unknown; unknown pod types generate a warning but collection continues
-
-#### Scenario: Collect logs handles non-running pods
-- **WHEN** the CLI encounters a pod that is not in Running state
-- **THEN** it logs a warning with a manual log path suggestion for the user to collect logs manually, and continues with other pods
-
-#### Scenario: Collect logs gets console logs for current and previous containers
-- **WHEN** the CLI collects logs from a container
-- **THEN** it gets both current console logs and previous container logs (using -p flag) via `kubectl logs`, saving them to separate files in the console log directory
-
-#### Scenario: Collect logs gets host information once per node
-- **WHEN** the CLI collects logs from the first pod on a node
-- **THEN** it executes /tmp/collect.sh on the node to gather host information, copies it to the local log directory, and skips host collection for subsequent pods on the same node
-
-#### Scenario: Collect logs handles container without log-file-dir argument
-- **WHEN** the CLI encounters a container that does not have the --log-file-dir argument set
-- **THEN** it logs a warning "log-file-dir is not set" and skips file log collection for that container (console logs are still collected)
-
-#### Scenario: Collect logs includes oceanctl logs in zip
-- **WHEN** the CLI compresses collected logs
-- **THEN** the zip file includes node file logs, console logs, AND oceanctl logs from /var/log/huawei/oceanctl-log
+- **THEN** it handles the following cases:
+  - Identifies pod types (CSI, CSM, Xuanwu, Unknown); unknown types generate a warning but collection continues
+  - Non-running pods: logs a warning with a manual log path suggestion and continues
+  - Collects both current and previous container console logs via `kubectl logs -p`
+  - Executes /tmp/collect.sh on the node to gather host information once per node (not per pod)
+  - Containers without --log-file-dir argument: logs a warning and skips file log collection (console logs still collected)
+  - Final zip includes node file logs, console logs, AND oceanctl logs from /var/log/huawei/oceanctl-log
+  - Temporary local log files from /tmp are cleaned up on completion (success or failure)

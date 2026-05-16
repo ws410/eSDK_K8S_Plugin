@@ -26,7 +26,3 @@ The sidecar controller shall update StorageBackendContent status fields by polli
 #### Scenario: Update vendor and version
 - **WHEN** the sidecar controller receives GetBackendStatsResponse
 - **THEN** the shouldUpdateContentStatus function updates SBCT.Status.VendorName (e.g., "Huawei") and SBCT.Status.ProviderVersion (CSI driver version)
-
-#### Scenario: shouldUpdateContentStatus always triggers API update
-- **WHEN** the sidecar controller processes GetBackendStatsResponse and calls shouldUpdateContentStatus
-- **THEN** the function always returns true, even when no fields have changed, triggering an unnecessary Kubernetes API update call on every sync cycle

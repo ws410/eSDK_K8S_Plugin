@@ -1,36 +1,40 @@
-## ADDED Requirements
+## Purpose
 
-### Requirement: sbc-validation shall validate StorageBackendClaim on create and update
-The admission webhook validates StorageBackendClaim resources to ensure they meet the required schema and business rules before being persisted. The webhook path is "/storagebackendclaim" with failure policy "Fail". No mutation operations are performed -- the webhook is purely validating.
+定义 StorageBackendClaim 准入验证 Webhook 规范，在创建和更新时验证 SBC 资源，确保满足架构和业务规则，包括 Provider 必填校验、ConfigMapMeta/SecretMeta 格式校验和不可变字段校验。
 
-#### Scenario: Validate SBC with required Provider field
-- **WHEN** a user creates an SBC without the Provider field
-- **THEN** the validateCommonClaim function rejects the request with error "Provider in StorageBackendClaim [%s] can not be empty"
+## Requirements
 
-#### Scenario: Validate SBC ConfigMapMeta format
-- **WHEN** a user creates an SBC with ConfigMapMeta not in "<namespace>/<name>" format
-- **THEN** the validateCommon function rejects the request; the format is validated indirectly by SplitMetaNamespaceKey during backend.GetStorageBackendInfo(), which returns an error "split configmap meta %s namespace failed"
+### Requirement: sbc-validation SHALL validate StorageBackendClaim on create and update
+准入 Webhook SHALL 验证 StorageBackendClaim 资源，以确保它们在持久化之前满足所需的架构和业务规则。Webhook 路径为 "/storagebackendclaim"，失败策略为 "Fail"。不执行变更操作——Webhook 纯粹是验证性的。
 
-#### Scenario: Validate SBC SecretMeta format
-- **WHEN** a user creates an SBC with SecretMeta not in "<namespace>/<name>" format
-- **THEN** the validateCommon function rejects the request; the format is validated indirectly by SplitMetaNamespaceKey during backend.GetStorageBackendInfo(), which returns an error "split secret meta %s namespace failed"
+#### Scenario:验证带有必需 Provider 字段的 SBC
+- **WHEN** 用户创建不带 Provider 字段的 SBC 时
+- **THEN** validateCommonClaim 函数拒绝请求，错误为 "Provider in StorageBackendClaim [%s] can not be empty"
 
-#### Scenario: Validate SBC ConfigMapMeta is not empty
-- **WHEN** a user creates an SBC with empty ConfigMapMeta
-- **THEN** the validateCommonClaim function rejects the request with error "StorageBackendClaim %s's configmap [%s] is empty"
+#### 场景：验证 SBC ConfigMapMeta 格式
+- **WHEN** 用户创建 ConfigMapMeta 不符合 "<namespace>/<name>" 格式的 SBC 时
+- **THEN** validateCommon 函数拒绝请求；格式在 backend.GetStorageBackendInfo() 期间通过 SplitMetaNamespaceKey 间接验证，返回错误 "split configmap meta %s namespace failed"
 
-#### Scenario: Validate SBC SecretMeta is not empty
-- **WHEN** a user creates an SBC with empty SecretMeta
-- **THEN** the validateCommonClaim function rejects the request with error "StorageBackendClaim %s's secret [%s] is empty"
+#### 场景：验证 SBC SecretMeta 格式
+- **WHEN** 用户创建 SecretMeta 不符合 "<namespace>/<name>" 格式的 SBC 时
+- **THEN** validateCommon 函数拒绝请求；格式在 backend.GetStorageBackendInfo() 期间通过 SplitMetaNamespaceKey 间接验证，返回错误 "split secret meta %s namespace failed"
 
-#### Scenario: Validate SBC update doesn't change immutable fields
-- **WHEN** a user updates an SBC's Provider field
-- **THEN** the validateUpdate function rejects the request with error "[provider] is forbidden changed with StorageBackendClaim %s"; if only Spec and Annotations are unchanged, the update is allowed without further validation
+#### 场景：验证 SBC ConfigMapMeta 不为空
+- **WHEN** 用户创建 ConfigMapMeta 为空的 SBC 时
+- **THEN** validateCommonClaim 函数拒绝请求，错误为 "StorageBackendClaim %s's configmap [%s] is empty"
 
-#### Scenario: Validate SBC with valid configuration
-- **WHEN** a user creates an SBC with all required fields and valid formats
-- **THEN** the webhook performs full backend validation: retrieves ConfigMap and Secret, constructs the Backend object, validates storage type and plugin existence, validates parameters, and calls Plugin.Validate() which performs a login test to the storage array; if all pass, the request is allowed
+#### 场景：验证 SBC SecretMeta 不为空
+- **WHEN** 用户创建 SecretMeta 为空的 SBC 时
+- **THEN** validateCommonClaim 函数拒绝请求，错误为 "StorageBackendClaim %s's secret [%s] is empty"
 
-#### Scenario: Validate SBC delete with finalizers
-- **WHEN** a user deletes an SBC that has finalizers other than ClaimBoundFinalizer
-- **THEN** the validateDelete function rejects the request with error "forbid delete StorageBackendClaim %s, there are some finalizers [%v]"; only the ClaimBoundFinalizer ("storagebackend.xuanwu.huawei.io/storagebackendclaim-bound-protection") is permitted
+#### 场景：验证 SBC 更新不更改不可变字段
+- **WHEN** 用户更新 SBC 的 Provider 字段时
+- **THEN** validateUpdate 函数拒绝请求，错误为 "[provider] is forbidden changed with StorageBackendClaim %s"；如果仅 Spec 和 Annotations 未更改，则允许更新而无需进一步验证
+
+#### 场景：验证配置有效的 SBC
+- **WHEN** 用户创建带有所有必需字段和有效格式的 SBC 时
+- **THEN** Webhook 执行完整的后端验证：检索 ConfigMap 和 Secret，构建 Backend 对象，验证存储类型和插件存在性，验证参数，并调用 Plugin.Validate() 执行到存储阵列的登录测试；如果全部通过，则允许请求
+
+#### 场景：验证带有 finalizer 的 SBC 删除
+- **WHEN** 用户删除带有 ClaimBoundFinalizer 之外的 finalizer 的 SBC 时
+- **THEN** validateDelete 函数拒绝请求，错误为 "forbid delete StorageBackendClaim %s, there are some finalizers [%v]"；仅允许 ClaimBoundFinalizer（"storagebackend.xuanwu.huawei.io/storagebackendclaim-bound-protection"）

@@ -1,40 +1,44 @@
-## ADDED Requirements
+## Purpose
 
-### Requirement: DR-CSI StorageBackend service shall manage backends
-The DR-CSI StorageBackend gRPC service provides backend registration, status querying, and lifecycle management for the disaster recovery CSI protocol.
+定义 DR-CSI StorageBackend gRPC 服务规范，提供后端注册、状态查询、后端列表和注销功能，用于灾难恢复 CSI 协议的后端管理。
 
-#### Scenario: Register a backend
-- **WHEN** the storage-backend-controller calls RegisterBackend via DR-CSI
-- **THEN** the service registers the backend with its configuration (storage type, parameters, credentials) and initializes the storage plugin
+## Requirements
 
-#### Scenario: Query backend status
-- **WHEN** the sidecar controller calls GetBackendStatus via DR-CSI
-- **THEN** the service returns the backend's online status, capabilities, pool capacities, and device specifications
+### Requirement: DR-CSI StorageBackend service SHALL manage backends
+DR-CSI StorageBackend gRPC 服务 SHALL 为灾难恢复 CSI 协议提供后端注册、状态查询和生命周期管理。
 
-#### Scenario: Query all backends
-- **WHEN** the sidecar controller calls ListBackends via DR-CSI
-- **THEN** the service returns all registered backends with their status
+#### Scenario: 注册后端
+- **WHEN** storage-backend-controller 通过 DR-CSI 调用 RegisterBackend 时
+- **THEN** 服务使用其配置（存储类型、参数、凭据）注册后端并初始化存储插件
 
-#### Scenario: Unregister a backend
-- **WHEN** a backend is deleted
-- **THEN** the service unregisters the backend, logs out from the storage array, and releases the client connection
+#### Scenario:查询后端状态
+- **WHEN** sidecar 控制器通过 DR-CSI 调用 GetBackendStatus 时
+- **THEN** 服务返回后端的在线状态、能力、池容量和设备规格
 
-#### Scenario: Handle backend registration failure
-- **WHEN** backend.BuildBackend fails during registration (invalid config, plugin init failure)
-- **THEN** the service returns a gRPC error with the build failure reason and does not add the backend to cache
+#### Scenario:查询所有后端
+- **WHEN** sidecar 控制器通过 DR-CSI 调用 ListBackends 时
+- **THEN** 服务返回所有已注册后端及其状态
 
-#### Scenario: AddStorageBackend is idempotent for duplicate backends
-- **WHEN** AddStorageBackend is called for a backend that already exists in the cache
-- **THEN** the service calls FetchAndRegisterOneBackend which re-fetches from Kubernetes and updates the cache entry; no duplicate error is returned
+#### Scenario:注销后端
+- **WHEN** 后端被删除时
+- **THEN** 服务注销后端，从存储阵列登出，并释放客户端连接
 
-#### Scenario: RemoveStorageBackend is idempotent for non-existent backends
-- **WHEN** RemoveStorageBackend is called for a backend that does not exist in the cache
-- **THEN** the cacheHandler.Delete is a no-op (safe on missing keys); no error is returned
+#### Scenario:处理后端注册失败
+- **WHEN** 注册期间 backend.BuildBackend 失败（配置无效、插件初始化失败）时
+- **THEN** 服务返回带有构建失败原因的 gRPC 错误，且不将后端添加到缓存
 
-#### Scenario: GetBackendStats skips offline backends
-- **WHEN** GetBackendStats is called for a backend with Online=false
-- **THEN** the service returns error "GetBackendStats backend: [X] is offline, skip get stats" without querying the storage array
+#### Scenario:AddStorageBackend 对重复后端是幂等的
+- **WHEN** 对缓存中已存在的后端调用 AddStorageBackend 时
+- **THEN** 服务调用 FetchAndRegisterOneBackend，该函数从 Kubernetes 重新获取并更新缓存条目；不返回重复错误
 
-#### Scenario: GetBackendStats with empty pools
-- **WHEN** GetBackendStats is called for a backend with zero storage pools
-- **THEN** the service returns an empty pools array in the response; no special handling for zero-pool backends
+#### Scenario:RemoveStorageBackend 对不存在的后端是幂等的
+- **WHEN** 对缓存中不存在的后端调用 RemoveStorageBackend 时
+- **THEN** cacheHandler.Delete 是空操作（对缺失的键安全）；不返回错误
+
+#### Scenario:GetBackendStats 跳过离线后端
+- **WHEN** 对 Online=false 的后端调用 GetBackendStats 时
+- **THEN** 服务返回错误 "GetBackendStats backend: [X] is offline, skip get stats"，而不查询存储阵列
+
+#### Scenario:GetBackendStats 处理空池
+- **WHEN** 对零存储池的后端调用 GetBackendStats 时
+- **THEN** 服务在响应中返回空池数组；对零池后端没有特殊处理

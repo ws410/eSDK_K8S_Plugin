@@ -1,130 +1,138 @@
-## ADDED Requirements
+## Purpose
 
-### Requirement: CRD types shall define custom resources for backend and volume management
-The system defines four Custom Resource Definitions: StorageBackendClaim (SBC), StorageBackendContent (SBCT), VolumeModifyClaim (VMC), and VolumeModifyContent. SBC/SBCT follow the PVC-PV pattern for backend management; VMC/VMContent follow a job-like pattern for bulk volume modification.
+定义存储后端和卷管理系统的四个自定义资源定义（CRD）：StorageBackendClaim、StorageBackendContent、VolumeModifyClaim 和 VolumeModifyContent，包括其字段规范、状态机和验证规则。
 
----
+## Requirements
 
-### Requirement: StorageBackendClaim CRD shall define user-facing backend requests
-The StorageBackendClaim (SBC) is a namespaced Custom Resource that represents a user's request to configure a storage backend. It follows the PVC-PV pattern where the Claim is the user-facing request and the Content is the cluster-scoped actual configuration.
+### Requirement: CRD types SHALL define custom resources for backend and volume management
+系统 SHALL 定义四个自定义资源定义：StorageBackendClaim（SBC）、StorageBackendContent（SBCT）、VolumeModifyClaim（VMC）和 VolumeModifyContent。SBC/SBCT 遵循 PVC-PV 模式进行后端管理；VMC/VMContent 遵循类作业模式进行批量卷修改。
 
-#### Scenario: SBC Spec fields
-- **WHEN** a user creates a StorageBackendClaim
-- **THEN** the Spec must include: Provider (required, filters the provider), and may optionally include: ConfigMapMeta (namespace/name format for storage management info), SecretMeta (namespace/name format for sensitive info), MaxClientThreads (limits storage client connections), Parameters (user-defined extension parameters), UseCert (boolean, default false, enables certificate usage), CertSecret (name of the certificate Secret)
-
-#### Scenario: SBC Status fields
-- **WHEN** the SBC is processed by the controller
-- **THEN** the Status is populated with: Phase (Pending/Bound/Unavailable), StorageBackendId (unique backend identifier), ConfigmapMeta (current configmap namespace/name), SecretMeta (current secret namespace/name), MaxClientThreads (current value), BoundContentName (reference to the bound StorageBackendContent), StorageType (e.g., oceanstor-san), Protocol (e.g., iscsi, nfs), MetroBackend (hyperMetro partner backend), UseCert, CertSecret
-
-#### Scenario: SBC lifecycle phases
-- **WHEN** a new SBC is created
-- **THEN** its Phase is set to "Pending"
-- **WHEN** the controller binds it to a StorageBackendContent
-- **THEN** its Phase is set to "Bound"
-- **WHEN** the backend fails to log in (e.g., wrong password)
-- **THEN** its Phase is set to "Unavailable"
-
-#### Scenario: SBC printed columns
-- **WHEN** a user runs `kubectl get sbc`
-- **THEN** the output includes columns: StorageBackendContentName, Status, Age (and with -o wide: StorageType, Protocol, MetroBackend)
-
-#### Scenario: SBC short name
-- **WHEN** a user uses the short name
-- **THEN** `sbc` is accepted as an alias for StorageBackendClaim
-
-#### Scenario: SBC immutable Provider field
-- **WHEN** a user attempts to update an existing SBC's Provider field
-- **THEN** the update is rejected by the admission webhook (Provider is immutable after creation)
-
-#### Scenario: SBC with UseCert enabled
-- **WHEN** a user creates an SBC with UseCert=true
-- **THEN** the CertSecret field must be populated with the certificate Secret name; the controller will use the certificate for backend authentication
+#### Scenario: CRD 类型注册
+- **WHEN** CSI 驱动启动时
+- **THEN** 系统 SHALL 注册四个 CRD 类型到 Kubernetes API 服务器：StorageBackendClaim、StorageBackendContent、VolumeModifyClaim 和 VolumeModifyContent
 
 ---
 
-### Requirement: StorageBackendContent CRD shall represent actual backend configuration
-The StorageBackendContent (SBCT) is a cluster-scoped Custom Resource that represents the actual storage backend configuration. It is bound to a StorageBackendClaim and contains pool information, capacity, capabilities, and online status.
+### Requirement: StorageBackendClaim CRD SHALL define user-facing backend requests
+StorageBackendClaim（SBC）SHALL 是一个命名空间级别的自定义资源，代表用户配置存储后端的请求。它遵循 PVC-PV 模式，其中 Claim 是用户Facing的请求，Content 是集群范围的实际配置。
 
-#### Scenario: SBCT Spec fields
-- **WHEN** a StorageBackendContent is created by the controller
-- **THEN** the Spec includes: Provider (required, matches the SBC), ConfigmapMeta (current configmap namespace/name), SecretMeta (current secret namespace/name), BackendClaim (bound SBC namespace/name), MaxClientThreads, Parameters (extension parameters), UseCert, CertSecret
+#### Scenario:SBC Spec 字段
+- **WHEN** 用户创建 StorageBackendClaim 时
+- **THEN** Spec 必须包含：Provider（必需，过滤提供方），并可可选包含：ConfigMapMeta（存储管理信息的 namespace/name 格式）、SecretMeta（敏感信息的 namespace/name 格式）、MaxClientThreads（限制存储客户端连接数）、Parameters（用户定义的扩展参数）、UseCert（布尔值，默认 false，启用证书使用）、CertSecret（证书 Secret 的名称）
 
-#### Scenario: SBCT Status fields
-- **WHEN** the sidecar controller updates the SBCT status
-- **THEN** the Status includes: ContentName (identity: provider-name@backend-name#pool-name), VendorName (e.g., Huawei), ProviderVersion (CSI driver version), Pools (array of pool names with capacities), Capacity (TotalCapacity/UsedCapacity/FreeCapacity map), Capabilities (map of capability names to booleans: SupportThin, SupportThick, SupportQoS, SupportMetro, SupportReplication, SupportClone, etc.), Specification (device SN, VStoreID, etc.), ConfigmapMeta, SecretMeta, Online (login success flag), MaxClientThreads, SN (storage device serial number), UseCert, CertSecret
+#### Scenario:SBC Status 字段
+- **WHEN** SBC 被控制器处理时
+- **THEN** Status 被填充：Phase（Pending/Bound/Unavailable）、StorageBackendId（唯一后端标识符）、ConfigmapMeta（当前 configmap 的 namespace/name）、SecretMeta（当前 secret 的 namespace/name）、MaxClientThreads（当前值）、BoundContentName（绑定的 StorageBackendContent 引用）、StorageType（例如 oceanstor-san）、Protocol（例如 iscsi, nfs）、MetroBackend（双活伙伴后端）、UseCert、CertSecret
 
-#### Scenario: SBCT printed columns
-- **WHEN** a user runs `kubectl get sbct`
-- **THEN** the output includes columns: Claim, SN, VendorName, ProviderVersion, Online, Age
+#### Scenario:SBC 生命周期阶段
+- **WHEN** 创建新的 SBC 时
+- **THEN** 其 Phase 设置为 "Pending"
+- **WHEN** 控制器将其绑定到 StorageBackendContent 时
+- **THEN** 其 Phase 设置为 "Bound"
+- **WHEN** 后端登录失败（例如密码错误）时
+- **THEN** 其 Phase 设置为 "Unavailable"
 
-#### Scenario: SBCT short name
-- **WHEN** a user uses the short name
-- **THEN** `sbct` is accepted as an alias for StorageBackendContent
+#### Scenario:SBC 打印列
+- **WHEN** 用户运行 `kubectl get sbc` 时
+- **THEN** 输出包含列：StorageBackendContentName、Status、Age（使用 -o wide 时还包括：StorageType、Protocol、MetroBackend）
 
-#### Scenario: SBCT is cluster-scoped
-- **WHEN** a user queries SBCT
-- **THEN** it is accessible without namespace specification (cluster-scoped resource)
+#### Scenario:SBC 短名称
+- **WHEN** 用户使用短名称时
+- **THEN** `sbc` 被接受为 StorageBackendClaim 的别名
 
----
+#### Scenario:SBC 不可变的 Provider 字段
+- **WHEN** 用户尝试更新现有 SBC 的 Provider 字段时
+- **THEN** 更新被准入 Webhook 拒绝（Provider 在创建后不可变）
 
-### Requirement: VolumeModifyClaim CRD shall define volume modification requests
-The VolumeModifyClaim (VMC) is a cluster-scoped Custom Resource that represents a request to modify volumes (e.g., QoS, SmartTier, SmartMigration). It follows a job-like pattern where the Claim tracks overall progress and Contents track individual volume modifications.
-
-#### Scenario: VMC Spec fields
-- **WHEN** a user creates a VolumeModifyClaim
-- **THEN** the Spec must include: Source (required, with Kind - default "StorageClass", Name, and optional Namespace), and Parameters (CSI driver-specific opaque key-value pairs for modification settings)
-
-#### Scenario: VMC Status fields
-- **WHEN** the VMC is processed by the controller
-- **THEN** the Status includes: Phase (Pending/Creating/Completed/Rollback/Deleting), Contents (array of ModifyContents with ModifyContentName, SourceVolume, and Status), Ready (progress indicator, e.g., "2/5"), Parameters (echo of spec parameters), StartedAt (timestamp), CompletedAt (timestamp)
-
-#### Scenario: VMC lifecycle phases
-- **WHEN** a new VMC is created
-- **THEN** its Phase is set to "Pending"
-- **WHEN** VContents are being created but not all completed
-- **THEN** its Phase is set to "Creating"
-- **WHEN** all associated VContents are completed
-- **THEN** its Phase is set to "Completed"
-- **WHEN** the VMC receives a deletion request and starts rollback
-- **THEN** its Phase is set to "Rollback"
-- **WHEN** the VMC starts deleting
-- **THEN** its Phase is set to "Deleting"
-
-#### Scenario: VMC printed columns
-- **WHEN** a user runs `kubectl get vmc`
-- **THEN** the output includes columns: Status, Ready, Age (and with -o wide: SourceKind, SourceName, StartedAt, CompletedAt)
-
-#### Scenario: VMC short name
-- **WHEN** a user uses the short name
-- **THEN** `vmc` is accepted as an alias for VolumeModifyClaim
-
-#### Scenario: VMC is cluster-scoped
-- **WHEN** a user queries VMC
-- **THEN** it is accessible without namespace specification (cluster-scoped resource)
+#### Scenario:启用 UseCert 的 SBC
+- **WHEN** 用户创建 UseCert=true 的 SBC 时
+- **THEN** CertSecret 字段必须填充证书 Secret 名称；控制器将使用证书进行后端认证
 
 ---
 
-### Requirement: VolumeModifyContent CRD shall track individual volume modifications
-The VolumeModifyContent is a cluster-scoped Custom Resource that tracks the modification status of an individual volume. Each VolumeModifyClaim creates one VolumeModifyContent per matching PersistentVolume.
+### Requirement: StorageBackendContent CRD SHALL represent actual backend configuration
+StorageBackendContent（SBCT）SHALL 是一个集群范围的自定义资源，表示实际的存储后端配置。它绑定到 StorageBackendClaim，包含池信息、容量、能力和在线状态。
 
-#### Scenario: VolumeModifyContent Spec fields
-- **WHEN** a VolumeModifyContent is created by the controller
-- **THEN** the Spec includes: VMCName (reference to the parent VolumeModifyClaim), SourceVolume (PVC namespace/name), Parameters (CSI driver-specific modification parameters)
+#### Scenario:SBCT Spec 字段
+- **WHEN** 控制器创建 StorageBackendContent 时
+- **THEN** Spec 包含：Provider（必需，匹配 SBC）、ConfigmapMeta（当前 configmap 的 namespace/name）、SecretMeta（当前 secret 的 namespace/name）、BackendClaim（绑定的 SBC namespace/name）、MaxClientThreads、Parameters（扩展参数）、UseCert、CertSecret
 
-#### Scenario: VolumeModifyContent Status fields
-- **WHEN** the VolumeModifyContent is processed
-- **THEN** the Status includes: Phase (Pending/InProgress/Completed/Failed), and error message if failed
+#### Scenario:SBCT Status 字段
+- **WHEN** sidecar 控制器更新 SBCT 状态时
+- **THEN** Status 包含：ContentName（标识：provider-name@backend-name#pool-name）、VendorName（例如 Huawei）、ProviderVersion（CSI 驱动版本）、Pools（池名称和容量数组）、Capacity（TotalCapacity/UsedCapacity/FreeCapacity 映射）、Capabilities（能力名称到布尔值的映射：SupportThin、SupportThick、SupportQoS、SupportMetro、SupportReplication、SupportClone 等）、Specification（设备 SN、VStoreID 等）、ConfigmapMeta、SecretMeta、Online（登录成功标志）、MaxClientThreads、SN（存储设备序列号）、UseCert、CertSecret
 
-#### Scenario: VolumeModifyContent lifecycle phases
-- **WHEN** a VolumeModifyContent is created
-- **THEN** its Phase is set to "Pending"
-- **WHEN** the modification is being applied via DR-CSI gRPC
-- **THEN** its Phase is set to "InProgress"
-- **WHEN** the modification completes successfully
-- **THEN** its Phase is set to "Completed"
-- **WHEN** the modification fails
-- **THEN** its Phase is set to "Failed"
+#### Scenario:SBCT 打印列
+- **WHEN** 用户运行 `kubectl get sbct` 时
+- **THEN** 输出包含列：Claim、SN、VendorName、ProviderVersion、Online、Age
 
-#### Scenario: VolumeModifyContent is cluster-scoped
-- **WHEN** a user queries VolumeModifyContent
-- **THEN** it is accessible without namespace specification (cluster-scoped resource)
+#### Scenario:SBCT 短名称
+- **WHEN** 用户使用短名称时
+- **THEN** `sbct` 被接受为 StorageBackendContent 的别名
+
+#### Scenario:SBCT 是集群范围的
+- **WHEN** 用户查询 SBCT 时
+- **THEN** 它无需指定命名空间即可访问（集群范围资源）
+
+---
+
+### Requirement: VolumeModifyClaim CRD SHALL define volume modification requests
+VolumeModifyClaim（VMC）SHALL 是一个集群范围的自定义资源，代表修改卷的请求（例如 QoS、SmartTier、SmartMigration）。它遵循类作业模式，其中 Claim 跟踪总体进度，Contents 跟踪单个卷修改。
+
+#### Scenario:VMC Spec 字段
+- **WHEN** 用户创建 VolumeModifyClaim 时
+- **THEN** Spec 必须包含：Source（必需，包含 Kind - 默认 "StorageClass"、Name，以及可选的 Namespace），以及 Parameters（CSI 驱动特定的不透明键值对，用于修改设置）
+
+#### Scenario:VMC Status 字段
+- **WHEN** VMC 被控制器处理时
+- **THEN** Status 包含：Phase（Pending/Creating/Completed/Rollback/Deleting）、Contents（ModifyContents 数组，包含 ModifyContentName、SourceVolume 和 Status）、Ready（进度指示器，例如 "2/5"）、Parameters（spec 参数的回显）、StartedAt（时间戳）、CompletedAt（时间戳）
+
+#### Scenario:VMC 生命周期阶段
+- **WHEN** 创建新的 VMC 时
+- **THEN** 其 Phase 设置为 "Pending"
+- **WHEN** VContents 正在创建但尚未全部完成时
+- **THEN** 其 Phase 设置为 "Creating"
+- **WHEN** 所有关联的 VContents 完成时
+- **THEN** 其 Phase 设置为 "Completed"
+- **WHEN** VMC 收到删除请求并开始回滚时
+- **THEN** 其 Phase 设置为 "Rollback"
+- **WHEN** VMC 开始删除时
+- **THEN** 其 Phase 设置为 "Deleting"
+
+#### Scenario:VMC 打印列
+- **WHEN** 用户运行 `kubectl get vmc` 时
+- **THEN** 输出包含列：Status、Ready、Age（使用 -o wide 时还包括：SourceKind、SourceName、StartedAt、CompletedAt）
+
+#### Scenario:VMC 短名称
+- **WHEN** 用户使用短名称时
+- **THEN** `vmc` 被接受为 VolumeModifyClaim 的别名
+
+#### Scenario:VMC 是集群范围的
+- **WHEN** 用户查询 VMC 时
+- **THEN** 它无需指定命名空间即可访问（集群范围资源）
+
+---
+
+### Requirement: VolumeModifyContent CRD SHALL track individual volume modifications
+VolumeModifyContent SHALL 是一个集群范围的自定义资源，跟踪单个卷的修改状态。每个 VolumeModifyClaim 为每个匹配的 PersistentVolume 创建一个 VolumeModifyContent。
+
+#### Scenario:VolumeModifyContent Spec 字段
+- **WHEN** 控制器创建 VolumeModifyContent 时
+- **THEN** Spec 包含：VMCName（父 VolumeModifyClaim 的引用）、SourceVolume（PVC namespace/name）、Parameters（CSI 驱动特定的修改参数）
+
+#### Scenario:VolumeModifyContent Status 字段
+- **WHEN** VolumeModifyContent 被处理时
+- **THEN** Status 包含：Phase（Pending/InProgress/Completed/Failed），以及失败时的错误消息
+
+#### Scenario:VolumeModifyContent 生命周期阶段
+- **WHEN** 创建 VolumeModifyContent 时
+- **THEN** 其 Phase 设置为 "Pending"
+- **WHEN** 通过 DR-CSI gRPC 应用修改时
+- **THEN** 其 Phase 设置为 "InProgress"
+- **WHEN** 修改成功完成时
+- **THEN** 其 Phase 设置为 "Completed"
+- **WHEN** 修改失败时
+- **THEN** 其 Phase 设置为 "Failed"
+
+#### Scenario:VolumeModifyContent 是集群范围的
+- **WHEN** 用户查询 VolumeModifyContent 时
+- **THEN** 它无需指定命名空间即可访问（集群范围资源）

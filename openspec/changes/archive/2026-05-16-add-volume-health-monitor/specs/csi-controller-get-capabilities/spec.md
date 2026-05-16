@@ -1,8 +1,4 @@
-## Purpose
-
-定义 CSI ControllerGetCapabilities RPC 的接口规范，用于通告驱动支持的控制器服务能力，包括卷创建、发布、扩容和快照功能。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: ControllerGetCapabilities RPC 必须通告控制器能力
 ControllerGetCapabilities RPC SHALL 通告驱动支持的控制器服务能力。驱动支持：CREATE_DELETE_VOLUME、PUBLISH_UNPUBLISH_VOLUME、EXPAND_VOLUME、CREATE_DELETE_SNAPSHOT、CLONE_VOLUME 和 GET_VOLUME。
